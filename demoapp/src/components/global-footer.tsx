@@ -1,10 +1,16 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
+import { useRouter, usePathname } from 'expo-router';
 
 export default function GlobalFooter() {
   const router = useRouter();
+  const pathname = usePathname();
+
+  // Chỉ hiển thị footer ở trang chủ
+  if (pathname !== '/' && pathname !== '/index' && pathname !== '') {
+    return null;
+  }
 
   return (
     <View style={styles.container}>

@@ -19,7 +19,7 @@ export default function GlobalHeader() {
     { name: 'Bản đồ', route: '/ban-do-so' },
     { name: 'Kinh nghiệm', route: '/cam-nang' },
     { name: 'Điểm di tích', route: '/diem-di-tich' },
-    { name: '✨ Ưu đãi', route: '/', isHighlight: true },
+    { name: '✨ Ưu đãi', route: '/uu-dai', isHighlight: true },
   ];
 
   const handleTabPress = (route: string) => {
@@ -70,13 +70,13 @@ export default function GlobalHeader() {
           <Pressable hitSlop={6} onPress={() => router.push('/ve-du-lich')}>
             <SymbolView name="magnifyingglass" size={20} tintColor="#334155" />
           </Pressable>
-          <Pressable hitSlop={6} onPress={() => router.push('/ve-du-lich')}>
+          <Pressable hitSlop={6} onPress={() => router.push('/don-hang-ve')}>
             <View>
               <SymbolView name="bag" size={20} tintColor="#334155" />
               <View style={styles.badge}><Text style={styles.badgeText}>1</Text></View>
             </View>
           </Pressable>
-          <Pressable hitSlop={6} onPress={() => router.push('/cam-nang')}>
+          <Pressable hitSlop={6} onPress={() => router.push('/tai-khoan')}>
             <SymbolView name="person.circle" size={20} tintColor="#334155" />
           </Pressable>
           <Pressable hitSlop={6} onPress={() => router.push('/')}>

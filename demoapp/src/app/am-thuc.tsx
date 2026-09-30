@@ -10,10 +10,7 @@ export default function AmThucScreen() {
   const [selectedCategory, setSelectedCategory] = useState('Tất cả nhu cầu');
 
   return (
-    <View style={styles.container}>ty
-    You create a few icons for the categories on the mobile app.
-    
-    
+    <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         
         {/* Header Hero Section */}

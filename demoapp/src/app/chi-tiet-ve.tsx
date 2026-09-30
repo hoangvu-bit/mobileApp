@@ -2,10 +2,97 @@ import GlobalFooter from '../components/global-footer';
 import React, { useState, useMemo } from 'react';
 import { SymbolView } from 'expo-symbols';
 import { Image } from 'expo-image';
-import { ScrollView, StyleSheet, Text, View, Pressable, Alert, Dimensions } from 'react-native';
+import { ScrollView, StyleSheet, Text, View, Pressable, Alert, Dimensions, Modal, TextInput } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 
 const { width } = Dimensions.get('window');
+
+interface TicketVoucher {
+  code: string;
+  title: string;
+  desc: string;
+  discountType: 'fixed' | 'percent';
+  discountValue: number;
+  maxDiscount?: number;
+  minSpend: number;
+  expiry: string;
+  tag: string;
+}
+
+const AVAILABLE_VOUCHERS: TicketVoucher[] = [
+  {
+    code: 'CHAOBANMOI',
+    title: 'Ưu đãi chào bạn mới',
+    desc: 'Giảm 15% tối đa 150.000đ cho đơn đầu tiên',
+    discountType: 'percent',
+    discountValue: 15,
+    maxDiscount: 150000,
+    minSpend: 0,
+    expiry: '31/03/2026',
+    tag: 'Khách mới',
+  },
+  {
+    code: 'SUNWORLD50',
+    title: 'Ưu đãi vé Sun World & Cáp treo',
+    desc: 'Giảm trực tiếp 50.000đ cho đơn từ 300.000đ',
+    discountType: 'fixed',
+    discountValue: 50000,
+    minSpend: 300000,
+    expiry: '28/02/2026',
+    tag: 'Cáp treo',
+  },
+  {
+    code: 'BUFFETVANSON',
+    title: 'Buffet nướng & lẩu ẩm thực',
+    desc: 'Giảm ngay 100.000đ cho đơn vé từ 500.000đ',
+    discountType: 'fixed',
+    discountValue: 100000,
+    minSpend: 500000,
+    expiry: 'Hôm nay',
+    tag: 'Ẩm thực',
+  },
+  {
+    code: 'DEALCUOITUAN',
+    title: 'Săn deal cuối tuần rực rỡ',
+    desc: 'Giảm trực tiếp 80.000đ cho đơn từ 400.000đ',
+    discountType: 'fixed',
+    discountValue: 80000,
+    minSpend: 400000,
+    expiry: 'Chủ nhật này',
+    tag: 'Cuối tuần',
+  },
+  {
+    code: 'HOIVIEN10',
+    title: 'Tri ân hội viên iGovi',
+    desc: 'Giảm 10% tối đa 100.000đ cho đơn từ 200.000đ',
+    discountType: 'percent',
+    discountValue: 10,
+    maxDiscount: 100000,
+    minSpend: 200000,
+    expiry: '30/04/2026',
+    tag: 'Hội viên',
+  },
+  {
+    code: 'VIMOI30',
+    title: 'Ưu đãi liên kết ví điện tử',
+    desc: 'Giảm 30.000đ cho đơn vé từ 200.000đ',
+    discountType: 'fixed',
+    discountValue: 30000,
+    minSpend: 200000,
+    expiry: '31/03/2026',
+    tag: 'Ví điện tử',
+  },
+];
+
+const calculateVoucherDiscount = (voucher: TicketVoucher, subtotal: number) => {
+  if (subtotal < voucher.minSpend) return 0;
+  if (voucher.discountType === 'fixed') {
+    return Math.min(voucher.discountValue, subtotal);
+  } else {
+    const raw = Math.round((subtotal * voucher.discountValue) / 100);
+    return voucher.maxDiscount ? Math.min(raw, voucher.maxDiscount) : raw;
+  }
+};
 
 export default function ChiTietVeScreen() {
   const router = useRouter();
@@ -27,9 +114,39 @@ export default function ChiTietVeScreen() {
   const childPrice = Math.round(basePrice * 0.7);
   const seniorPrice = Math.round(basePrice * 0.85);
 
+  const RELATED_TICKETS = [
+    {
+      name: 'Vé cáp treo Chùa Hang Núi Bà Đen',
+      location: 'TP. Tây Ninh, Tây Ninh',
+      price: '250.000đ',
+      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDSAQuEjb-Bt5eFuEplUPQGqLDhhRhxOjsE5gF4uv78cqB0WC9ZH3ZB_f7ctnG6NrQJdp13H09dTGE_26sEeXUYIouHmEFqK164P99sYk8fiYe3791lOmhL7AIDV9VDvE8lxk98uJjOi9vqYAphBTeFO6yuYjtcZB6-DZDKF8zfPfmIhgWmHg3RVOw71JKBm-wsZUUOES4ZfOFwkY4PYjEePrGp2UjHhZTn34YIenlI70ZgzeMXwy7H',
+    },
+    {
+      name: 'Vé cáp treo Đỉnh Vân Sơn khứ hồi',
+      location: 'TP. Tây Ninh, Tây Ninh',
+      price: '400.000đ',
+      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBTQM5ESMJevGiwAHx1fFX_wLxgo4itlZDhgJ0eONMbSIMMreLqKuDxt6UsiNe3g8LFfA6CLUOVA0o9BgptYKQx61G4wgUb4oS8u-xxLVFuFRFEJMSjpeYMlCHQejlxE2kE8GG_xxKf4IIxncz8mNRlPp2ZeKrTfc-rDsS4bgdda0ANDJgvow6DnsBt2bHFl_DQIDR0B36w9PxRynWGkhj9VCsArrnJg3XcoFUP220Cu0-aksICe5UM',
+    }
+  ];
+
   const [adultQty, setAdultQty] = useState(1);
   const [childQty, setChildQty] = useState(0);
   const [seniorQty, setSeniorQty] = useState(0);
+  const [selectedVoucher, setSelectedVoucher] = useState<TicketVoucher | null>(null);
+  const [isVoucherModalOpen, setIsVoucherModalOpen] = useState(false);
+  const [inputCode, setInputCode] = useState('');
+  const [inputError, setInputError] = useState('');
+
+  React.useEffect(() => {
+    const vCode = ((params as any).voucherCode || (params as any).code || '').toUpperCase();
+    if (vCode) {
+      const match = AVAILABLE_VOUCHERS.find(v => v.code === vCode);
+      if (match) {
+        setSelectedVoucher(match);
+      }
+    }
+  }, [params]);
+
   const datesList = useMemo(() => {
     const dates = [];
     const today = new Date();
@@ -59,14 +176,79 @@ export default function ChiTietVeScreen() {
   const [isInfoOpen, setIsInfoOpen] = useState(false);
 
   const totalQty = adultQty + childQty + seniorQty;
-  const totalPrice = (adultQty * basePrice) + (childQty * childPrice) + (seniorQty * seniorPrice);
+  const subtotalPrice = (adultQty * basePrice) + (childQty * childPrice) + (seniorQty * seniorPrice);
   const totalOriginalPrice = (adultQty * (basePrice + 7500)) + (childQty * (childPrice + 7500)) + (seniorQty * (seniorPrice + 7500));
-  const totalSaved = totalOriginalPrice - totalPrice;
+  const baseSaved = totalOriginalPrice - subtotalPrice;
+
+  const voucherDiscount = useMemo(() => {
+    if (!selectedVoucher) return 0;
+    return calculateVoucherDiscount(selectedVoucher, subtotalPrice);
+  }, [selectedVoucher, subtotalPrice]);
+
+  const finalPrice = Math.max(0, subtotalPrice - voucherDiscount);
+  const totalSaved = baseSaved + voucherDiscount;
+
+  const handleApplyInputCode = () => {
+    setInputError('');
+    const code = inputCode.trim().toUpperCase();
+    if (!code) {
+      setInputError('Vui lòng nhập mã ưu đãi');
+      return;
+    }
+    const found = AVAILABLE_VOUCHERS.find(v => v.code === code);
+    if (found) {
+      if (subtotalPrice < found.minSpend) {
+        setInputError(`Đơn hàng tối thiểu ${found.minSpend.toLocaleString('vi-VN')}đ để dùng mã này`);
+        return;
+      }
+      setSelectedVoucher(found);
+      setIsVoucherModalOpen(false);
+      setInputCode('');
+      Alert.alert('Thành công', `Đã áp dụng mã [${found.code}] giảm ${calculateVoucherDiscount(found, subtotalPrice).toLocaleString('vi-VN')}đ!`);
+    } else if (code === 'CHAOBANMOI' || code === 'IGOVI50' || code === 'IGOVI150') {
+      const customVoucher: TicketVoucher = {
+        code,
+        title: `Ưu đãi ${code}`,
+        desc: 'Giảm giá trực tiếp khi thanh toán',
+        discountType: 'fixed',
+        discountValue: 50000,
+        minSpend: 150000,
+        expiry: '31/12/2026',
+        tag: 'Đặc quyền',
+      };
+      setSelectedVoucher(customVoucher);
+      setIsVoucherModalOpen(false);
+      setInputCode('');
+      Alert.alert('Thành công', `Đã áp dụng mã [${code}] giảm 50.000đ!`);
+    } else {
+      setInputError('Mã ưu đãi không hợp lệ hoặc đã hết hạn');
+    }
+  };
+
+  const handleSelectVoucher = (voucher: TicketVoucher) => {
+    if (subtotalPrice < voucher.minSpend) {
+      Alert.alert(
+        'Chưa đủ điều kiện',
+        `Mã này áp dụng cho đơn từ ${voucher.minSpend.toLocaleString('vi-VN')}đ. Bạn cần thêm ${(voucher.minSpend - subtotalPrice).toLocaleString('vi-VN')}đ nữa để áp dụng.`,
+        [{ text: 'Đồng ý' }]
+      );
+      return;
+    }
+    if (selectedVoucher?.code === voucher.code) {
+      setSelectedVoucher(null);
+    } else {
+      setSelectedVoucher(voucher);
+      setIsVoucherModalOpen(false);
+    }
+  };
 
   const handleBookTicket = () => {
+    const voucherText = selectedVoucher && voucherDiscount > 0
+      ? `\n- Mã ưu đãi áp dụng: ${selectedVoucher.code} (-${voucherDiscount.toLocaleString('vi-VN')}đ)`
+      : '';
     Alert.alert(
       'Đặt vé thành công',
-      `Bạn đã đặt ${totalQty} vé "${name}". Tổng tiền: ${totalPrice.toLocaleString('vi-VN')}đ.`,
+      `Bạn đã đặt ${totalQty} vé "${name}".${voucherText}\n- Tổng thanh toán: ${finalPrice.toLocaleString('vi-VN')}đ.`,
       [{ text: 'Đồng ý', onPress: () => router.back() }]
     );
   };
@@ -110,13 +292,7 @@ export default function ChiTietVeScreen() {
         <View style={styles.imageGallery}>
           <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
             <Image source={{ uri: image }} style={styles.mainImage} />
-            <Image source={{ uri: 'https://igovi.vn/demo/sunworld/buffet-dessert.jpg' }} style={styles.mainImage} />
-            <Image source={{ uri: 'https://igovi.vn/demo/sunworld/cable-car.jpg' }} style={styles.mainImage} />
           </ScrollView>
-          <View style={styles.imageCountBadge}>
-            <SymbolView name="photo" size={14} tintColor="#0f172a" />
-            <Text style={styles.imageCountText}>Xem tất cả 3 ảnh</Text>
-          </View>
         </View>
 
         {/* Quick Info Grid */}
@@ -298,8 +474,8 @@ export default function ChiTietVeScreen() {
               </View>
             </View>
             <View style={styles.bpQtyControls}>
-              <Pressable onPress={() => setAdultQty(Math.max(1, adultQty - 1))} style={styles.bpQtyBtn}>
-                <SymbolView name="minus" size={16} tintColor={adultQty <= 1 ? '#cbd5e1' : '#64748b'} />
+              <Pressable onPress={() => { if (adultQty > 0 && totalQty > 1) setAdultQty(adultQty - 1) }} style={styles.bpQtyBtn}>
+                <SymbolView name="minus" size={16} tintColor={(adultQty === 0 || totalQty <= 1) ? '#cbd5e1' : '#64748b'} />
               </Pressable>
               <Text style={styles.bpQtyVal}>{adultQty}</Text>
               <Pressable onPress={() => { if (totalQty < 20) setAdultQty(adultQty + 1) }} style={styles.bpQtyBtn}>
@@ -317,8 +493,8 @@ export default function ChiTietVeScreen() {
               </View>
             </View>
             <View style={styles.bpQtyControls}>
-              <Pressable onPress={() => setChildQty(Math.max(0, childQty - 1))} style={styles.bpQtyBtn}>
-                <SymbolView name="minus" size={16} tintColor={childQty <= 0 ? '#cbd5e1' : '#64748b'} />
+              <Pressable onPress={() => { if (childQty > 0 && totalQty > 1) setChildQty(childQty - 1) }} style={styles.bpQtyBtn}>
+                <SymbolView name="minus" size={16} tintColor={(childQty === 0 || totalQty <= 1) ? '#cbd5e1' : '#64748b'} />
               </Pressable>
               <Text style={styles.bpQtyVal}>{childQty}</Text>
               <Pressable onPress={() => { if (totalQty < 20) setChildQty(childQty + 1) }} style={styles.bpQtyBtn}>
@@ -336,8 +512,8 @@ export default function ChiTietVeScreen() {
               </View>
             </View>
             <View style={styles.bpQtyControls}>
-              <Pressable onPress={() => setSeniorQty(Math.max(0, seniorQty - 1))} style={styles.bpQtyBtn}>
-                <SymbolView name="minus" size={16} tintColor={seniorQty <= 0 ? '#cbd5e1' : '#64748b'} />
+              <Pressable onPress={() => { if (seniorQty > 0 && totalQty > 1) setSeniorQty(seniorQty - 1) }} style={styles.bpQtyBtn}>
+                <SymbolView name="minus" size={16} tintColor={(seniorQty === 0 || totalQty <= 1) ? '#cbd5e1' : '#64748b'} />
               </Pressable>
               <Text style={styles.bpQtyVal}>{seniorQty}</Text>
               <Pressable onPress={() => { if (totalQty < 20) setSeniorQty(seniorQty + 1) }} style={styles.bpQtyBtn}>
@@ -346,15 +522,74 @@ export default function ChiTietVeScreen() {
             </View>
           </View>
 
+          {/* Section Chọn mã ưu đãi */}
+          <View style={styles.voucherSection}>
+            <View style={styles.voucherHeaderRow}>
+              <View style={styles.voucherTitleLeft}>
+                <SymbolView name="ticket.fill" size={16} tintColor="#ea580c" />
+                <Text style={styles.voucherSectionTitle}>Mã ưu đãi / Khuyến mãi</Text>
+              </View>
+              <Pressable onPress={() => setIsVoucherModalOpen(true)} style={styles.selectVoucherBtn}>
+                <Text style={styles.selectVoucherBtnText}>{selectedVoucher ? 'Đổi mã' : 'Chọn mã'}</Text>
+                <SymbolView name="chevron.right" size={12} tintColor="#168b58" />
+              </Pressable>
+            </View>
+
+            {selectedVoucher ? (
+              <View style={styles.appliedVoucherBox}>
+                <View style={styles.appliedVoucherLeft}>
+                  <View style={styles.voucherCodeBadge}>
+                    <Text style={styles.voucherCodeText}>{selectedVoucher.code}</Text>
+                  </View>
+                  <View style={{ flex: 1, marginLeft: 10 }}>
+                    <Text style={styles.appliedVoucherTitle} numberOfLines={1}>{selectedVoucher.title}</Text>
+                    <Text style={styles.appliedVoucherDiscount}>
+                      Đã giảm -{voucherDiscount.toLocaleString('vi-VN')}đ
+                    </Text>
+                  </View>
+                </View>
+                <Pressable onPress={() => setSelectedVoucher(null)} hitSlop={10} style={styles.removeVoucherBtn}>
+                  <SymbolView name="xmark.circle.fill" size={20} tintColor="#94a3b8" />
+                </Pressable>
+              </View>
+            ) : (
+              <Pressable style={styles.voucherEmptyBox} onPress={() => setIsVoucherModalOpen(true)}>
+                <View style={styles.voucherEmptyLeft}>
+                  <View style={styles.voucherIconCircle}>
+                    <SymbolView name="percent" size={12} tintColor="#ea580c" />
+                  </View>
+                  <Text style={styles.voucherEmptyText}>Chọn hoặc nhập mã giảm giá</Text>
+                </View>
+                <View style={styles.voucherCountTag}>
+                  <Text style={styles.voucherCountTagText}>{AVAILABLE_VOUCHERS.length} mã</Text>
+                </View>
+              </Pressable>
+            )}
+          </View>
+
           <View style={styles.bpDivider} />
 
           <View style={styles.bpTotalRow}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.bpTotalLabel}>Tổng tạm tính</Text>
+              <Text style={styles.bpTotalLabel}>Tổng thanh toán</Text>
               <Text style={styles.bpTotalSub}>{totalQty} vé - đã gồm thuế phí</Text>
-              {totalSaved > 0 && <Text style={styles.bpTotalSave}>Tiết kiệm {totalSaved.toLocaleString('vi-VN')}đ từ giá niêm yết {totalOriginalPrice.toLocaleString('vi-VN')}đ</Text>}
+              {selectedVoucher && voucherDiscount > 0 && (
+                <Text style={styles.discountRowText}>
+                  Mã {selectedVoucher.code}: -{voucherDiscount.toLocaleString('vi-VN')}đ
+                </Text>
+              )}
+              {totalSaved > 0 && (
+                <Text style={styles.bpTotalSave}>
+                  Tiết kiệm {totalSaved.toLocaleString('vi-VN')}đ (gồm ưu đãi)
+                </Text>
+              )}
             </View>
-            <Text style={styles.bpTotalValue}>{totalPrice.toLocaleString('vi-VN')}đ</Text>
+            <View style={{ alignItems: 'flex-end' }}>
+              {selectedVoucher && voucherDiscount > 0 && (
+                <Text style={styles.originalTotalStrike}>{subtotalPrice.toLocaleString('vi-VN')}đ</Text>
+              )}
+              <Text style={styles.bpTotalValue}>{finalPrice.toLocaleString('vi-VN')}đ</Text>
+            </View>
           </View>
 
           <Pressable style={styles.bpSubmitBtn} onPress={handleBookTicket}>
@@ -425,8 +660,202 @@ export default function ChiTietVeScreen() {
           </View>
         </View>
         
-        <GlobalFooter />
+        {/* Related Tickets Section */}
+        <View style={styles.relatedSection}>
+          <Text style={styles.relatedSubTitle}>GỢI Ý THÊM</Text>
+          <View style={styles.relatedTitleRow}>
+            <Text style={styles.relatedTitle}>Vé du lịch liên quan</Text>
+            <Pressable style={styles.viewAllBtn} onPress={() => router.push('/ve-du-lich')}>
+              <Text style={styles.viewAllText}>Xem tất cả</Text>
+              <SymbolView name="arrow.right" size={14} tintColor="#168b58" />
+            </Pressable>
+          </View>
+
+          <View style={styles.relatedList}>
+            {RELATED_TICKETS.map((item, index) => (
+              <Pressable 
+                key={index} 
+                style={styles.relatedCard}
+                onPress={() => {
+                  router.push({
+                    pathname: '/chi-tiet-ve',
+                    params: {
+                      name: item.name,
+                      price: item.price,
+                      location: item.location,
+                      image: item.image,
+                      desc: `Khám phá ${item.name} tại ${item.location} để có những trải nghiệm tuyệt vời.`
+                    }
+                  });
+                }}
+              >
+                <View style={styles.relatedImgContainer}>
+                  <Image source={{ uri: item.image }} style={styles.relatedImg} />
+                  <View style={styles.relatedBadge}>
+                    <Text style={styles.relatedBadgeText}>Vé điện tử</Text>
+                  </View>
+                  <View style={styles.relatedIconTopRight}>
+                    <SymbolView name="drop.fill" size={14} tintColor="#0ea5e9" />
+                    <SymbolView name="sparkles" size={10} tintColor="#7dd3fc" style={{ position: 'absolute', top: 2, right: 2 }} />
+                  </View>
+                </View>
+                <View style={styles.relatedInfo}>
+                  <Text style={styles.relatedName} numberOfLines={2}>{item.name}</Text>
+                  <View style={styles.relatedLocation}>
+                    <SymbolView name="mappin.and.ellipse" size={12} tintColor="#168b58" />
+                    <Text style={styles.relatedLocationText}>{item.location}</Text>
+                  </View>
+                  
+                  <View style={styles.relatedDivider} />
+                  
+                  <View style={styles.relatedFooter}>
+                    <View>
+                      <Text style={styles.relatedPriceLabel}>Giá từ</Text>
+                      <Text style={styles.relatedPriceVal}>{item.price}</Text>
+                    </View>
+                    <View style={styles.relatedAction}>
+                      <Text style={styles.relatedActionText}>Xem</Text>
+                      <SymbolView name="arrow.right" size={12} tintColor="#168b58" />
+                    </View>
+                  </View>
+                </View>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+
       </ScrollView>
+
+      {/* Voucher Selection Modal */}
+      <Modal
+        visible={isVoucherModalOpen}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsVoucherModalOpen(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <Pressable style={styles.modalBackdrop} onPress={() => setIsVoucherModalOpen(false)} />
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={styles.modalTitle}>Mã ưu đãi iGovi</Text>
+                <Text style={styles.modalSub}>Áp dụng giảm trực tiếp khi thanh toán vé</Text>
+              </View>
+              <Pressable onPress={() => setIsVoucherModalOpen(false)} style={styles.modalCloseBtn} hitSlop={10}>
+                <SymbolView name="xmark" size={16} tintColor="#64748b" />
+              </Pressable>
+            </View>
+
+            {/* Input Manual Code */}
+            <View style={styles.voucherInputRow}>
+              <TextInput
+                placeholder="Nhập mã ưu đãi (VD: SUNWORLD50)"
+                placeholderTextColor="#94a3b8"
+                value={inputCode}
+                onChangeText={(text) => {
+                  setInputCode(text);
+                  setInputError('');
+                }}
+                autoCapitalize="characters"
+                style={styles.voucherTextInput}
+              />
+              <Pressable style={styles.applyCodeBtn} onPress={handleApplyInputCode}>
+                <Text style={styles.applyCodeBtnText}>Áp dụng</Text>
+              </Pressable>
+            </View>
+            {inputError ? <Text style={styles.inputErrorText}>{inputError}</Text> : null}
+
+            {/* Voucher List */}
+            <Text style={styles.modalListTitle}>MÃ KHẢ DỤNG CHO ĐƠN CỦA BẠN</Text>
+            <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
+              {AVAILABLE_VOUCHERS.map((v) => {
+                const isSelected = selectedVoucher?.code === v.code;
+                const isEligible = subtotalPrice >= v.minSpend;
+                const discountVal = isEligible ? calculateVoucherDiscount(v, subtotalPrice) : 0;
+
+                return (
+                  <Pressable
+                    key={v.code}
+                    style={[
+                      styles.voucherModalCard,
+                      isSelected && styles.voucherModalCardSelected,
+                      !isEligible && styles.voucherModalCardDisabled,
+                    ]}
+                    onPress={() => handleSelectVoucher(v)}
+                  >
+                    <View style={styles.voucherModalCardLeft}>
+                      <View style={styles.voucherModalCardTop}>
+                        <View style={[styles.vmBadge, { backgroundColor: isEligible ? '#fee2e2' : '#f1f5f9' }]}>
+                          <Text style={[styles.vmBadgeText, { color: isEligible ? '#b32113' : '#94a3b8' }]}>
+                            {v.tag}
+                          </Text>
+                        </View>
+                        <Text style={styles.vmCode}>{v.code}</Text>
+                      </View>
+                      <Text style={styles.vmTitle}>{v.title}</Text>
+                      <Text style={styles.vmDesc}>{v.desc}</Text>
+                      <View style={styles.vmFooterRow}>
+                        <Text style={styles.vmExpiry}>HSD: {v.expiry}</Text>
+                        {!isEligible && (
+                          <Text style={styles.vmNeedMore}>
+                            Cần thêm {(v.minSpend - subtotalPrice).toLocaleString('vi-VN')}đ
+                          </Text>
+                        )}
+                      </View>
+                      <Pressable
+                        style={{ marginTop: 4, flexDirection: 'row', alignItems: 'center', gap: 2 }}
+                        onPress={(e) => {
+                          e.stopPropagation?.();
+                          setIsVoucherModalOpen(false);
+                          router.push({
+                            pathname: '/chi-tiet-uu-dai',
+                            params: { code: v.code },
+                          });
+                        }}
+                      >
+                        <Text style={{ fontSize: 10, color: '#168b58', fontWeight: '700' }}>Xem điều kiện & chi tiết ›</Text>
+                      </Pressable>
+                    </View>
+
+                    <View style={styles.voucherModalCardRight}>
+                      {isSelected ? (
+                        <View style={styles.vmSelectedBadge}>
+                          <SymbolView name="checkmark" size={12} tintColor="#fff" />
+                          <Text style={styles.vmSelectedText}>Đang dùng</Text>
+                        </View>
+                      ) : (
+                        <View style={[styles.vmApplyBtn, !isEligible && styles.vmApplyBtnDisabled]}>
+                          <Text style={[styles.vmApplyBtnText, !isEligible && styles.vmApplyBtnTextDisabled]}>
+                            {isEligible ? 'Dùng mã' : 'Chưa đủ'}
+                          </Text>
+                        </View>
+                      )}
+                      {isEligible && (
+                        <Text style={styles.vmDiscountPreview}>
+                          -{discountVal.toLocaleString('vi-VN')}đ
+                        </Text>
+                      )}
+                    </View>
+                  </Pressable>
+                );
+              })}
+
+              {/* Link to /uu-dai */}
+              <Pressable
+                style={styles.goToOffersBtn}
+                onPress={() => {
+                  setIsVoucherModalOpen(false);
+                  router.push('/uu-dai');
+                }}
+              >
+                <SymbolView name="gift.fill" size={16} tintColor="#ea580c" />
+                <Text style={styles.goToOffersText}>Khám phá thêm ưu đãi tại Trang Ưu Đãi</Text>
+                <SymbolView name="arrow.right" size={14} tintColor="#ea580c" />
+              </Pressable>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -571,4 +1000,387 @@ const styles = StyleSheet.create({
   infoPopoverItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   infoPopoverItemText: { fontSize: 12, color: '#64748b' },
   infoPopoverFooter: { fontSize: 11, color: '#94a3b8', textAlign: 'center', marginTop: 4 },
+  
+  relatedSection: { padding: 16, backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.05)' },
+  relatedSubTitle: { fontSize: 11, fontWeight: '800', color: '#ea580c', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 6 },
+  relatedTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
+  relatedTitle: { fontSize: 24, fontWeight: '700', color: '#0f3d2e', fontFamily: 'serif' }, // Fake serif look with standard weight
+  viewAllBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  viewAllText: { fontSize: 12, fontWeight: '700', color: '#168b58' },
+  relatedList: { gap: 16 },
+  relatedCard: { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#f1f5f9', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 3, overflow: 'hidden' },
+  relatedImgContainer: { height: 180, position: 'relative' },
+  relatedImg: { width: '100%', height: '100%' },
+  relatedBadge: { position: 'absolute', top: 12, left: 12, backgroundColor: 'rgba(255,255,255,0.95)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+  relatedBadgeText: { color: '#168b58', fontSize: 10, fontWeight: '800' },
+  relatedIconTopRight: { position: 'absolute', top: 12, right: 12, backgroundColor: '#fff', width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
+  relatedInfo: { padding: 16 },
+  relatedName: { fontSize: 16, fontWeight: '800', color: '#042f2e', marginBottom: 8, lineHeight: 22 },
+  relatedLocation: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  relatedLocationText: { fontSize: 12, color: '#94a3b8' },
+  relatedDivider: { height: 1, backgroundColor: '#f1f5f9', marginVertical: 12 },
+  relatedFooter: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
+  relatedPriceLabel: { fontSize: 10, color: '#94a3b8', marginBottom: 2 },
+  relatedPriceVal: { fontSize: 18, fontWeight: '900', color: '#ea580c' },
+  relatedAction: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingBottom: 2 },
+  relatedActionText: { fontSize: 12, fontWeight: '800', color: '#168b58' },
+
+  // Voucher section in Booking Panel
+  voucherSection: {
+    backgroundColor: '#fff9f5',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#fed7aa',
+    padding: 12,
+    marginTop: 14,
+  },
+  voucherHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  voucherTitleLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  voucherSectionTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#0f172a',
+    textTransform: 'uppercase',
+  },
+  selectVoucherBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+  },
+  selectVoucherBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#168b58',
+  },
+  appliedVoucherBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#fdba74',
+    borderRadius: 8,
+    padding: 10,
+  },
+  appliedVoucherLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  voucherCodeBadge: {
+    backgroundColor: '#ffedd5',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#fed7aa',
+  },
+  voucherCodeText: {
+    color: '#c2410c',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  appliedVoucherTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  appliedVoucherDiscount: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#168b58',
+    marginTop: 2,
+  },
+  removeVoucherBtn: {
+    padding: 4,
+    marginLeft: 8,
+  },
+  voucherEmptyBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: '#cbd5e1',
+    borderRadius: 8,
+    padding: 10,
+  },
+  voucherEmptyLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  voucherIconCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#fff7ed',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  voucherEmptyText: {
+    fontSize: 12,
+    color: '#64748b',
+    fontWeight: '500',
+  },
+  voucherCountTag: {
+    backgroundColor: '#f1f5f9',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  voucherCountTagText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#475569',
+  },
+
+  discountRowText: {
+    fontSize: 11,
+    color: '#168b58',
+    fontWeight: '700',
+    marginTop: 3,
+  },
+  originalTotalStrike: {
+    fontSize: 12,
+    color: '#94a3b8',
+    textDecorationLine: 'line-through',
+    marginBottom: 2,
+  },
+
+  // Voucher Modal
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  modalBackdrop: {
+    flex: 1,
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 16,
+    paddingHorizontal: 16,
+    paddingBottom: 30,
+    maxHeight: '85%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingBottom: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#0f172a',
+  },
+  modalSub: {
+    fontSize: 12,
+    color: '#64748b',
+    marginTop: 2,
+  },
+  modalCloseBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#f1f5f9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  voucherInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 14,
+  },
+  voucherTextInput: {
+    flex: 1,
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  applyCodeBtn: {
+    backgroundColor: '#ea580c',
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+    borderRadius: 8,
+  },
+  applyCodeBtnText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  inputErrorText: {
+    fontSize: 11,
+    color: '#ef4444',
+    marginTop: 6,
+    marginLeft: 4,
+  },
+  modalListTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#94a3b8',
+    letterSpacing: 1,
+    marginTop: 16,
+    marginBottom: 10,
+  },
+  modalScroll: {
+    maxHeight: 380,
+  },
+  voucherModalCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
+  },
+  voucherModalCardSelected: {
+    borderColor: '#168b58',
+    backgroundColor: '#f0fdf4',
+  },
+  voucherModalCardDisabled: {
+    opacity: 0.55,
+    backgroundColor: '#fafafa',
+  },
+  voucherModalCardLeft: {
+    flex: 1,
+    paddingRight: 10,
+  },
+  voucherModalCardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  vmBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  vmBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  vmCode: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#0f172a',
+  },
+  vmTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0f172a',
+    marginBottom: 2,
+  },
+  vmDesc: {
+    fontSize: 11,
+    color: '#64748b',
+    lineHeight: 16,
+    marginBottom: 6,
+  },
+  vmFooterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  vmExpiry: {
+    fontSize: 10,
+    color: '#94a3b8',
+    fontWeight: '600',
+  },
+  vmNeedMore: {
+    fontSize: 10,
+    color: '#ea580c',
+    fontWeight: '700',
+  },
+  voucherModalCardRight: {
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    minWidth: 80,
+  },
+  vmSelectedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#168b58',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 6,
+    gap: 4,
+  },
+  vmSelectedText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  vmApplyBtn: {
+    backgroundColor: '#e6f4ea',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  vmApplyBtnDisabled: {
+    backgroundColor: '#f1f5f9',
+  },
+  vmApplyBtnText: {
+    color: '#168b58',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  vmApplyBtnTextDisabled: {
+    color: '#94a3b8',
+  },
+  vmDiscountPreview: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#168b58',
+    marginTop: 4,
+  },
+  goToOffersBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 14,
+    marginTop: 8,
+    marginBottom: 10,
+    backgroundColor: '#fff7ed',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#fed7aa',
+  },
+  goToOffersText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#ea580c',
+  },
 });
