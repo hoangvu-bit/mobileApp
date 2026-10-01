@@ -1,19 +1,25 @@
-import React, { useMemo } from 'react';
-import { 
-  ScrollView, 
-  StyleSheet, 
-  Text, 
-  View, 
-  Pressable, 
-  Alert, 
-  Linking 
+import React, { useMemo, useState } from 'react';
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  Pressable,
+  Alert,
+  Linking,
+  Modal,
+  Dimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Ionicons, MaterialCommunityIcons, FontAwesome5, Feather } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CULINARY_ITEMS, CulinaryItem } from './am-thuc';
 
+const { width } = Dimensions.get('window');
+
 export default function ChiTietAmThucScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const params = useLocalSearchParams<{
     id?: string;
@@ -31,48 +37,53 @@ export default function ChiTietAmThucScreen() {
 
   // Find dish from database or fallback to params
   const dishData: CulinaryItem = useMemo(() => {
-    const found = CULINARY_ITEMS.find(d => d.id === params.id || d.name === params.name);
+    const found = CULINARY_ITEMS.find((d) => d.id === params.id || d.name === params.name);
     if (found) return found;
 
     return {
       id: 'custom',
-      name: params.name || 'Bò tơ Tây Ninh nướng y & lẩu đuôi bò',
-      restaurantName: params.restaurantName || 'Bò Tơ Năm Sánh 17 (Cơ sở chính)',
-      location: params.location || 'Hòa Thành, Tây Ninh',
+      name: params.name || 'Bánh Canh Trảng Bàng Hoàng Minh',
+      restaurantName: params.restaurantName || 'Bánh Canh Trảng Bàng Hoàng Minh',
+      location: params.location || 'Trảng Bàng, Tây Ninh',
       province: 'Tây Ninh',
-      address: params.address || 'QL22B, Xã Hiệp Tân, Thị xã Hòa Thành, Tây Ninh',
-      openHours: params.openHours || '08:30 - 22:30 hàng ngày',
-      phone: params.phone || '0913 888 777',
-      price: params.price || '150.000đ - 350.000đ / món',
-      priceNum: 150000,
+      address: params.address || '38 Quốc Lộ 22, Thị xã Trảng Bàng, Tây Ninh',
+      openHours: params.openHours || '06:00 - 21:30 hàng ngày',
+      phone: params.phone || '0276 3880 120',
+      price: params.price || '50.000đ - 80.000đ / tô',
+      priceNum: 50000,
       rating: 4.9,
-      reviewCount: 2350,
-      desc: params.desc || 'Bò tơ non nướng than hoa thơm lừng, thịt ngọt mềm mọng nước, da nướng giòn sần sật cuốn rau rừng.',
-      longDesc: 'Bò tơ Năm Sánh là thương hiệu nổi danh khắp miền Nam. Thịt bò được tuyển chọn từ những con bê non thả đồi Tây Ninh khoảng 5-6 tháng tuổi nên thịt mềm ngọt, da mỏng giòn và không có mùi gây.',
+      reviewCount: 1240,
+      desc: params.desc || 'Sợi bánh canh bột gạo dai mềm thơm lừng mùi gạo nàng thơm, nước dùng ninh xương ngọt thanh trong vắt ăn kèm đĩa thịt luộc và rau rừng.',
+      longDesc: 'Bánh canh Trảng Bàng là niềm tự hào ẩm thực Tây Ninh. Bột bánh được làm từ gạo nàng thơm phơi sương tạo độ dẻo dai đặc trưng. Ăn kèm đĩa thịt bắp giò heo luộc cuốn bánh tráng phơi sương và rổ rau rừng hơn 10 vị thuốc Nam tươi non.',
       flavorHighlights: [
-        'Thịt bò tơ non mềm ngọt tự nhiên, nướng xèo xèo trên than hồng rực lửa',
-        'Bò lụi sả cay the chấm chao sa tế hoặc mắm nêm thơm nồng',
-        'Lẩu đuôi bò hầm sâm bố chính ngọt mát, bổ dưỡng',
-        'Ăn kèm hơn 10 loại rau rừng Tây Ninh tươi rói và bánh phở cuốn'
+        'Nước dùng ninh từ xương ống heo hơn 6 tiếng, trong veo và ngọt hậu thanh khiết',
+        'Sợi bánh canh trắng ngần, dẻo dai mềm mại làm từ gạo nàng thơm',
+        'Đĩa thịt bắp giò heo cắt lát mỏng cuốn bánh tráng phơi sương chấm nước mắm tiêu',
+        'Kèm đĩa rau rừng Tây Ninh tươi rói: lá cóc, quế vị, sao nhái, đọt choại',
       ],
       recommendedMenu: [
-        { name: 'Bò tơ nướng y chấm muối ớt đỏ', price: '180.000đ' },
-        { name: 'Bò lụi sả nướng than hoa', price: '160.000đ' },
-        { name: 'Bò tơ nhúng giấm cuốn bánh tráng', price: '190.000đ' },
-        { name: 'Lẩu xí quách & đuôi bò tơ', price: '280.000đ' }
+        { name: 'Tô bánh canh giò nạc đặc biệt', price: '65.000đ' },
+        { name: 'Bánh canh thịt bắp giò khoanh', price: '55.000đ' },
+        { name: 'Đĩa thịt luộc cuốn bánh tráng rau rừng', price: '120.000đ' },
+        { name: 'Nước mía sầu riêng nguyên chất', price: '20.000đ' },
       ],
       tag: params.tag || 'Đặc sản trứ danh',
-      categories: ['Ăn gia đình', 'Cuối tuần', 'Đặc sản địa phương'],
-      image: params.image || 'https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?auto=format&fit=crop&w=1200&q=80',
+      categories: ['Ăn sáng', 'Đặc sản địa phương', 'Ăn gia đình'],
+      image: params.image || 'https://images.unsplash.com/photo-1555126634-323283e090fa?auto=format&fit=crop&w=1000&q=80',
       gallery: [
-        params.image || 'https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?auto=format&fit=crop&w=1200&q=80'
+        params.image || 'https://images.unsplash.com/photo-1555126634-323283e090fa?auto=format&fit=crop&w=1000&q=80',
+        'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?auto=format&fit=crop&w=1000&q=80',
       ],
       diningTips: [
-        'Không gian sân vườn rộng rãi, bãi đỗ xe ô tô thoải mái.',
-        'Đi nhóm từ 4-6 người là lý tưởng nhất để gọi được nhiều món nướng và lẩu.'
-      ]
+        'Quán bán cả ngày từ 6h sáng, rất đông vào khung giờ sáng 7h-8h30 và trưa 11h30-13h.',
+        'Nên gọi thêm phần bánh tráng phơi sương và đĩa rau rừng để trải nghiệm trọn vẹn vị Tây Ninh.',
+      ],
     };
   }, [params]);
+
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [isGalleryModalOpen, setIsGalleryModalOpen] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
 
   const handleOpenGoogleMaps = () => {
     const query = `${dishData.restaurantName} ${dishData.address}`;
@@ -89,366 +100,603 @@ export default function ChiTietAmThucScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      {/* Top Header */}
-      <View style={styles.topHeader}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn} hitSlop={10}>
+    <View style={[styles.container, { paddingTop: Math.max(insets.top, 12) }]}>
+      {/* Top Header Bar (Matching Tour / Eco Detail Screens) */}
+      <View style={styles.topBar}>
+        <Pressable onPress={() => router.back()} style={styles.topBarBtn} hitSlop={10}>
           <Ionicons name="chevron-back" size={22} color="#0f172a" />
+          <Text style={styles.topBarBackText}>Quay lại ẩm thực</Text>
         </Pressable>
-        <Text style={styles.topHeaderTitle} numberOfLines={1}>Chi tiết món ngon & Quán ăn</Text>
-        <Pressable onPress={() => router.replace('/')} style={styles.homeBtn} hitSlop={10}>
-          <Ionicons name="home-outline" size={20} color="#ea580c" />
-        </Pressable>
+        <View style={styles.topBarRight}>
+          <Pressable onPress={() => setIsSaved(!isSaved)} style={styles.topBarBtn} hitSlop={10}>
+            <Ionicons
+              name={isSaved ? 'heart' : 'heart-outline'}
+              size={22}
+              color={isSaved ? '#e11d48' : '#0f172a'}
+            />
+          </Pressable>
+          <Pressable onPress={handleOpenGoogleMaps} style={styles.topBarBtn} hitSlop={10}>
+            <Ionicons name="map-outline" size={20} color="#168b58" />
+          </Pressable>
+        </View>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        
-        {/* Hero Image */}
-        <View style={styles.heroImageContainer}>
-          <Image source={{ uri: dishData.image }} style={styles.heroImage} contentFit="cover" />
-          <View style={styles.heroBadgeOverlay}>
-            <View style={styles.badgeTag}>
-              <Ionicons name="flame" size={12} color="#ea580c" />
-              <Text style={styles.badgeTagText}>{dishData.tag}</Text>
+        {/* Title & Badges Section */}
+        <View style={styles.titleSection}>
+          <Text style={styles.mainTitle}>{dishData.name}</Text>
+
+          <View style={styles.tagBadgeRow}>
+            <View style={styles.starBadge}>
+              <Text style={styles.starIcon}>★</Text>
+              <Text style={styles.starBadgeText}>Món ngon chuẩn vị địa phương</Text>
             </View>
-            <View style={styles.badgeRating}>
-              <Ionicons name="star" size={12} color="#f59e0b" />
-              <Text style={styles.badgeRatingText}>{dishData.rating} ({dishData.reviewCount} đánh giá)</Text>
+
+            <View style={styles.calendarBadge}>
+              <Text style={{ fontSize: 11 }}>🥢</Text>
+              <Text style={styles.calendarBadgeText}>{dishData.tag || 'Đặc sản ẩm thực'}</Text>
+            </View>
+          </View>
+
+          <View style={styles.groupBadgeRow}>
+            <View style={styles.purpleGroupBadge}>
+              <Ionicons name="restaurant-outline" size={13} color="#6d28d9" />
+              <Text style={styles.purpleGroupBadgeText}>
+                {dishData.categories ? dishData.categories.join(' • ') : 'Ăn gia đình & Đặc sản'}
+              </Text>
+            </View>
+          </View>
+
+          {/* Pricing Highlight Card */}
+          <View style={styles.priceHighlightCard}>
+            <View style={styles.priceHighlightRight}>
+              <Text style={styles.priceHeaderLabel}>GIÁ THAM KHẢO</Text>
+              <Text style={styles.priceHighlightText}>
+                {dishData.price}
+              </Text>
+              <View style={styles.taxIncludedBadge}>
+                <Text style={styles.taxIncludedText}>Đã cập nhật bảng giá mới nhất</Text>
+              </View>
             </View>
           </View>
         </View>
 
-        {/* Content Details */}
-        <View style={styles.content}>
-          
-          {/* Location pill */}
-          <View style={styles.locRow}>
-            <Ionicons name="location-sharp" size={13} color="#ea580c" />
-            <Text style={styles.locText}>{dishData.location}</Text>
-          </View>
+        {/* Gallery Image & Thumbnails */}
+        <View style={styles.galleryWrapper}>
+          <Image
+            source={{ uri: dishData.gallery[selectedImageIndex] || dishData.image }}
+            style={styles.heroImage}
+            contentFit="cover"
+          />
 
-          {/* Dish Name */}
-          <Text style={styles.dishTitle}>{dishData.name}</Text>
-          <Text style={styles.priceTag}>{dishData.price}</Text>
-          <Text style={styles.dishDesc}>{dishData.longDesc || dishData.desc}</Text>
-
-          {/* CARD: THÔNG TIN QUÁN ĂN & ĐỊA ĐIỂM CHI TIẾT (Requirement 4) */}
-          <View style={styles.restaurantDetailCard}>
-            <View style={styles.restaurantCardHeader}>
-              <View style={styles.restaurantIconCircle}>
-                <Ionicons name="storefront" size={18} color="#ffffff" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.restaurantLabel}>QUÁN ĂN NỔI TIẾNG</Text>
-                <Text style={styles.restaurantTitle}>{dishData.restaurantName}</Text>
-              </View>
-            </View>
-
-            {/* Address */}
-            <View style={styles.restaurantInfoRow}>
-              <Ionicons name="location-outline" size={18} color="#ea580c" style={styles.infoRowIcon} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.infoRowLabel}>Địa chỉ quán:</Text>
-                <Text style={styles.infoRowValue}>{dishData.address}</Text>
-              </View>
-            </View>
-
-            {/* Opening and Closing Hours */}
-            <View style={styles.restaurantInfoRow}>
-              <Ionicons name="time-outline" size={18} color="#00897b" style={styles.infoRowIcon} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.infoRowLabel}>Thời gian mở - đóng cửa:</Text>
-                <Text style={styles.infoRowValueGreen}>{dishData.openHours}</Text>
-              </View>
-            </View>
-
-            {/* Phone */}
-            <View style={styles.restaurantInfoRow}>
-              <Ionicons name="call-outline" size={18} color="#ea580c" style={styles.infoRowIcon} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.infoRowLabel}>Hotline đặt bàn:</Text>
-                <Text style={styles.infoRowValue}>{dishData.phone}</Text>
-              </View>
-            </View>
-
-            {/* Action Buttons for Map & Calling */}
-            <View style={styles.restaurantActionRow}>
-              <Pressable style={styles.mapBtn} onPress={handleOpenGoogleMaps}>
-                <Ionicons name="map" size={15} color="#ffffff" />
-                <Text style={styles.mapBtnText}>Mở Google Maps chỉ đường</Text>
+          <View style={styles.thumbnailRow}>
+            {dishData.gallery.slice(0, 3).map((img, idx) => (
+              <Pressable
+                key={idx}
+                onPress={() => setSelectedImageIndex(idx)}
+                style={[
+                  styles.thumbnailBox,
+                  selectedImageIndex === idx && styles.thumbnailBoxActive,
+                ]}
+              >
+                <Image source={{ uri: img }} style={styles.thumbnailImg} contentFit="cover" />
               </Pressable>
+            ))}
 
-              <Pressable style={styles.callBtn} onPress={handleCallPhone}>
-                <Ionicons name="call" size={15} color="#c2410c" />
-                <Text style={styles.callBtnText}>Gọi quán</Text>
-              </Pressable>
+            <Pressable
+              style={styles.viewAllPhotosBtn}
+              onPress={() => setIsGalleryModalOpen(true)}
+            >
+              <Ionicons name="images-outline" size={15} color="#0f172a" />
+              <Text style={styles.viewAllPhotosText}>
+                Xem tất cả {dishData.gallery.length} ảnh
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Quick Facts Card */}
+        <View style={styles.quickFactsCard}>
+          <View style={styles.quickFactsHeader}>
+            <View style={styles.clockIconBg}>
+              <Ionicons name="restaurant" size={16} color="#fff" />
             </View>
+            <Text style={styles.quickFactsTitle}>THÔNG TIN QUÁN ĂN</Text>
           </View>
 
-          {/* Hương vị & Bí quyết chế biến */}
-          <View style={styles.sectionBlock}>
-            <View style={styles.sectionHeaderRow}>
-              <MaterialCommunityIcons name="silverware-clean" size={20} color="#ea580c" />
-              <Text style={styles.sectionTitle}>Hương vị & Điểm đặc sắc</Text>
+          <View style={styles.factsContainer}>
+            <View style={styles.factRow}>
+              <View style={styles.factIconBox}>
+                <Ionicons name="storefront-outline" size={22} color="#168b58" />
+              </View>
+              <View style={styles.factContent}>
+                <Text style={styles.factLabel}>TÊN QUÁN</Text>
+                <Text style={styles.factValue}>{dishData.restaurantName}</Text>
+              </View>
             </View>
-            <View style={styles.flavorList}>
-              {dishData.flavorHighlights.map((item, idx) => (
-                <View key={idx} style={styles.flavorItem}>
-                  <Ionicons name="checkmark-circle" size={16} color="#ea580c" style={{ marginTop: 2 }} />
-                  <Text style={styles.flavorText}>{item}</Text>
-                </View>
-              ))}
+
+            <View style={styles.factRow}>
+              <View style={styles.factIconBox}>
+                <Ionicons name="time-outline" size={22} color="#168b58" />
+              </View>
+              <View style={styles.factContent}>
+                <Text style={styles.factLabel}>GIỜ MỞ CỬA</Text>
+                <Text style={styles.factValue}>{dishData.openHours}</Text>
+              </View>
+            </View>
+
+            <View style={styles.factRow}>
+              <View style={styles.factIconBox}>
+                <Ionicons name="location-outline" size={22} color="#168b58" />
+              </View>
+              <View style={styles.factContent}>
+                <Text style={styles.factLabel}>ĐỊA CHỈ</Text>
+                <Text style={styles.factValue} numberOfLines={2}>{dishData.address}</Text>
+              </View>
+            </View>
+
+            <View style={[styles.factRow, { borderBottomWidth: 0, marginBottom: 0, paddingBottom: 0 }]}>
+              <View style={styles.factIconBox}>
+                <Ionicons name="call-outline" size={22} color="#168b58" />
+              </View>
+              <View style={styles.factContent}>
+                <Text style={styles.factLabel}>HOTLINE ĐẶT BÀN</Text>
+                <Text style={styles.factValue}>{dishData.phone}</Text>
+              </View>
             </View>
           </View>
+        </View>
 
-          {/* Thực đơn gợi ý của quán */}
-          <View style={styles.sectionBlock}>
-            <View style={styles.sectionHeaderRow}>
-              <Ionicons name="restaurant-outline" size={18} color="#00897b" />
-              <Text style={styles.sectionTitle}>Món ngon nên thử tại quán</Text>
-            </View>
-            <View style={styles.menuCard}>
-              {dishData.recommendedMenu.map((menuItem, idx) => (
-                <View 
-                  key={idx} 
-                  style={[
-                    styles.menuItemRow, 
-                    idx === dishData.recommendedMenu.length - 1 && { borderBottomWidth: 0 }
-                  ]}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.menuItemName}>{menuItem.name}</Text>
-                  </View>
-                  <Text style={styles.menuItemPrice}>{menuItem.price}</Text>
-                </View>
-              ))}
-            </View>
+        {/* Menu Gợi ý Section */}
+        <View style={styles.cardBox}>
+          <Text style={styles.sectionHeaderTitle}>Menu gợi ý & Bảng giá</Text>
+          <View style={{ gap: 8, marginTop: 10 }}>
+            {dishData.recommendedMenu.map((item, idx) => (
+              <View key={idx} style={styles.menuItemRow}>
+                <View style={styles.menuDot} />
+                <Text style={styles.menuName}>{item.name}</Text>
+                <Text style={styles.menuPrice}>{item.price}</Text>
+              </View>
+            ))}
           </View>
+        </View>
 
-          {/* Kinh nghiệm ăn uống */}
-          <View style={styles.sectionBlock}>
-            <View style={styles.sectionHeaderRow}>
-              <Ionicons name="bulb-outline" size={18} color="#f59e0b" />
-              <Text style={styles.sectionTitle}>Kinh nghiệm ăn uống</Text>
-            </View>
-            <View style={styles.tipsCard}>
-              {dishData.diningTips.map((tip, idx) => (
-                <View key={idx} style={styles.tipRow}>
-                  <Text style={styles.tipBullet}>•</Text>
-                  <Text style={styles.tipText}>{tip}</Text>
-                </View>
-              ))}
-            </View>
+        {/* Giới thiệu & Hương vị Section */}
+        <View style={styles.cardBox}>
+          <Text style={styles.sectionHeaderTitle}>Đặc trưng hương vị</Text>
+          <Text style={styles.paragraphText}>{dishData.longDesc || dishData.desc}</Text>
+
+          <View style={{ gap: 8, marginTop: 12 }}>
+            {dishData.flavorHighlights.map((hl, idx) => (
+              <View key={idx} style={styles.highlightItem}>
+                <Ionicons name="checkmark-circle" size={16} color="#059669" style={{ marginTop: 2 }} />
+                <Text style={styles.highlightText}>{hl}</Text>
+              </View>
+            ))}
           </View>
+        </View>
 
+        {/* Mẹo ăn uống & Lưu ý */}
+        <View style={styles.cardBox}>
+          <Text style={styles.sectionHeaderTitle}>Mẹo thưởng thức ngon nhất</Text>
+          <View style={{ gap: 8, marginTop: 10 }}>
+            {dishData.diningTips.map((tip, idx) => (
+              <View key={idx} style={styles.tipItem}>
+                <Ionicons name="bulb-outline" size={16} color="#ea580c" style={{ marginTop: 2 }} />
+                <Text style={styles.tipText}>{tip}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {/* Vị trí bản đồ Button */}
+        <View style={[styles.cardBox, { marginBottom: 20 }]}>
+          <Text style={styles.sectionHeaderTitle}>Vị trí quán trên bản đồ</Text>
+          <Text style={styles.addressText}>{dishData.address}</Text>
+          <Pressable style={styles.openMapBtn} onPress={handleOpenGoogleMaps}>
+            <Ionicons name="navigate" size={16} color="#ffffff" />
+            <Text style={styles.openMapBtnText}>Xem chỉ đường trên Google Maps</Text>
+          </Pressable>
         </View>
       </ScrollView>
 
-      {/* Bottom Sticky Bar */}
-      <View style={styles.bottomBar}>
-        <View>
-          <Text style={styles.bottomPriceLabel}>Mức giá trung bình</Text>
-          <Text style={styles.bottomPriceVal}>{dishData.price}</Text>
-        </View>
-        <Pressable style={styles.bottomDirectBtn} onPress={handleOpenGoogleMaps}>
-          <Ionicons name="navigate-circle" size={18} color="#ffffff" />
-          <Text style={styles.bottomDirectBtnText}>Chỉ đường đến quán</Text>
+      {/* Sticky Bottom Action Bar */}
+      <View style={[styles.bottomActionBar, { paddingBottom: Math.max(insets.bottom, 14) }]}>
+        <Pressable style={styles.callBtn} onPress={handleCallPhone}>
+          <Ionicons name="call" size={18} color="#065f46" />
+          <Text style={styles.callBtnText}>Gọi đặt bàn</Text>
+        </Pressable>
+
+        <Pressable style={styles.directBtn} onPress={handleOpenGoogleMaps}>
+          <Ionicons name="navigate" size={18} color="#ffffff" />
+          <Text style={styles.directBtnText}>Chỉ đường đến quán</Text>
         </Pressable>
       </View>
 
+      {/* Fullscreen Gallery Modal */}
+      <Modal visible={isGalleryModalOpen} transparent={true} animationType="fade">
+        <View style={styles.galleryModalOverlay}>
+          <View style={[styles.galleryModalHeader, { top: insets.top + 10 }]}>
+            <Text style={styles.galleryModalTitle}>{dishData.name}</Text>
+            <Pressable onPress={() => setIsGalleryModalOpen(false)} hitSlop={10}>
+              <Ionicons name="close-circle" size={30} color="#ffffff" />
+            </Pressable>
+          </View>
+          <ScrollView
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ alignItems: 'center' }}
+          >
+            {dishData.gallery.map((img, idx) => (
+              <View key={idx} style={{ width, alignItems: 'center', justifyContent: 'center' }}>
+                <Image source={{ uri: img }} style={styles.modalImage} contentFit="contain" />
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#ffffff' },
-  topHeader: {
+  container: {
+    flex: 1,
+    backgroundColor: '#f8faf9',
+  },
+  scrollContent: {
+    paddingBottom: 100,
+  },
+
+  /* Top Navigation Bar */
+  topBar: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
+    backgroundColor: '#ffffff',
     borderBottomWidth: 1,
     borderBottomColor: '#f1f5f9',
-    backgroundColor: '#ffffff',
   },
-  backBtn: { padding: 4 },
-  topHeaderTitle: { fontSize: 16, fontWeight: '700', color: '#0f172a', flex: 1, textAlign: 'center', marginHorizontal: 8 },
-  homeBtn: { padding: 4 },
-  scrollContent: { paddingBottom: 110 },
-
-  /* Hero Image */
-  heroImageContainer: { height: 230, width: '100%', position: 'relative' },
-  heroImage: { width: '100%', height: '100%' },
-  heroBadgeOverlay: {
-    position: 'absolute',
-    top: 12,
-    left: 12,
-    right: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center'
-  },
-  badgeTag: {
+  topBarBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
-    elevation: 3
+    gap: 6,
   },
-  badgeTagText: { color: '#ea580c', fontSize: 11, fontWeight: '800' },
-  badgeRating: {
+  topBarBackText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  topBarRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(15, 23, 42, 0.8)',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 14,
+    gap: 14,
   },
-  badgeRatingText: { color: '#ffffff', fontSize: 11, fontWeight: '700' },
 
-  /* Content */
-  content: { padding: 16, gap: 14 },
-  locRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  locText: { fontSize: 12, color: '#ea580c', fontWeight: '700' },
-  dishTitle: { fontSize: 22, fontWeight: 'bold', color: '#0f172a', lineHeight: 28 },
-  priceTag: { fontSize: 18, fontWeight: '900', color: '#ea580c' },
-  dishDesc: { fontSize: 13, color: '#475569', lineHeight: 20 },
-
-  /* Restaurant Card (Requirement 4) */
-  restaurantDetailCard: {
-    backgroundColor: '#fffaf5',
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: '#fed7aa',
+  /* Title & Badges Section */
+  titleSection: {
     padding: 16,
-    marginTop: 4,
-    gap: 12
-  },
-  restaurantCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingBottom: 10,
+    backgroundColor: '#ffffff',
     borderBottomWidth: 1,
-    borderBottomColor: '#fed7aa'
+    borderBottomColor: '#f1f5f9',
   },
-  restaurantIconCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#ea580c',
-    alignItems: 'center',
-    justifyContent: 'center'
+  mainTitle: {
+    fontSize: 21,
+    fontWeight: '900',
+    color: '#064e3b',
+    lineHeight: 28,
+    marginBottom: 12,
   },
-  restaurantLabel: { fontSize: 10, fontWeight: '800', color: '#c2410c', letterSpacing: 0.5 },
-  restaurantTitle: { fontSize: 16, fontWeight: '800', color: '#0f172a', marginTop: 1 },
-
-  restaurantInfoRow: {
+  tagBadgeRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 8,
   },
-  infoRowIcon: { marginTop: 2 },
-  infoRowLabel: { fontSize: 10, fontWeight: '700', color: '#64748b' },
-  infoRowValue: { fontSize: 13, fontWeight: '600', color: '#0f172a', marginTop: 1 },
-  infoRowValueGreen: { fontSize: 13, fontWeight: '800', color: '#00897b', marginTop: 1 },
-
-  restaurantActionRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 4
-  },
-  mapBtn: {
-    flex: 1,
+  starBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: '#ea580c',
-    paddingVertical: 11,
-    borderRadius: 10
-  },
-  mapBtnText: { color: '#ffffff', fontSize: 12, fontWeight: '800' },
-  callBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: '#ffedd5',
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-    borderRadius: 10,
+    backgroundColor: '#fef3c7',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#fed7aa'
+    borderColor: '#fde68a',
   },
-  callBtnText: { color: '#c2410c', fontSize: 12, fontWeight: '800' },
-
-  /* Details Blocks */
-  sectionBlock: { marginTop: 4 },
-  sectionHeaderRow: {
+  starIcon: {
+    color: '#d97706',
+    fontSize: 11,
+    marginRight: 4,
+  },
+  starBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#92400e',
+  },
+  calendarBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 10
+    backgroundColor: '#d1fae5',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#a7f3d0',
+    gap: 4,
   },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: 'bold',
-    color: '#0f172a'
+  calendarBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#065f46',
   },
-  flavorList: { gap: 8 },
-  flavorItem: {
+  groupBadgeRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-    backgroundColor: '#f8fafc',
-    padding: 10,
-    borderRadius: 10
+    marginBottom: 14,
   },
-  flavorText: { fontSize: 12, color: '#334155', flex: 1, lineHeight: 18 },
+  purpleGroupBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f5f3ff',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#ddd6fe',
+    gap: 4,
+  },
+  purpleGroupBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#6d28d9',
+  },
 
-  menuCard: {
-    backgroundColor: '#f8fafc',
+  /* Pricing Highlight Card */
+  priceHighlightCard: {
+    backgroundColor: '#fff7ed',
+    borderWidth: 1.5,
+    borderColor: '#ea580c',
     borderRadius: 12,
+    padding: 12,
+    alignItems: 'flex-start',
+  },
+  priceHighlightRight: {
+    width: '100%',
+  },
+  priceHeaderLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#ea580c',
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  priceHighlightText: {
+    fontSize: 19,
+    fontWeight: '900',
+    color: '#ea580c',
+  },
+  taxIncludedBadge: {
+    backgroundColor: '#ecfdf5',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginTop: 4,
+    alignSelf: 'flex-start',
+  },
+  taxIncludedText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#059669',
+  },
+
+  /* Gallery Section */
+  galleryWrapper: {
+    padding: 16,
+    backgroundColor: '#ffffff',
+    marginTop: 10,
+  },
+  heroImage: {
+    width: '100%',
+    height: 210,
+    borderRadius: 14,
+  },
+  thumbnailRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 8,
+  },
+  thumbnailBox: {
+    flex: 1,
+    height: 62,
+    borderRadius: 8,
+    overflow: 'hidden',
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+  },
+  thumbnailBoxActive: {
+    borderColor: '#168b58',
+  },
+  thumbnailImg: {
+    width: '100%',
+    height: '100%',
+  },
+  viewAllPhotosBtn: {
+    flex: 1.2,
+    height: 62,
+    borderRadius: 8,
+    backgroundColor: '#f1f5f9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
     borderWidth: 1,
     borderColor: '#e2e8f0',
-    paddingHorizontal: 14,
-    paddingVertical: 4
+  },
+  viewAllPhotosText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+
+  /* Quick Facts Card */
+  quickFactsCard: {
+    marginHorizontal: 16,
+    marginTop: 14,
+    backgroundColor: '#ffffff',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    padding: 16,
+  },
+  quickFactsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 14,
+  },
+  clockIconBg: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#168b58',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickFactsTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0f172a',
+    letterSpacing: 0.5,
+  },
+  factsContainer: {
+    gap: 12,
+  },
+  factRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+    paddingBottom: 10,
+    gap: 12,
+  },
+  factIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 8,
+    backgroundColor: '#f0fdf4',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  factContent: {
+    flex: 1,
+  },
+  factLabel: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: '#64748b',
+    textTransform: 'uppercase',
+  },
+  factValue: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0f172a',
+    marginTop: 1,
+  },
+
+  /* Card Box */
+  cardBox: {
+    marginHorizontal: 16,
+    marginTop: 14,
+    backgroundColor: '#ffffff',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    padding: 16,
+  },
+  sectionHeaderTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#0f172a',
+  },
+  paragraphText: {
+    fontSize: 12.5,
+    color: '#475569',
+    lineHeight: 20,
+    marginTop: 8,
   },
   menuItemRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 10,
+    justifyContent: 'space-between',
+    paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9'
+    borderBottomColor: '#f1f5f9',
   },
-  menuItemName: { fontSize: 12, fontWeight: '700', color: '#0f172a' },
-  menuItemPrice: { fontSize: 12, fontWeight: '800', color: '#ea580c' },
-
-  tipsCard: {
-    backgroundColor: '#fffbeb',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#fde68a',
-    padding: 12,
-    gap: 6
+  menuDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: '#ea580c',
+    marginRight: 8,
   },
-  tipRow: { flexDirection: 'row', gap: 6 },
-  tipBullet: { color: '#d97706', fontWeight: 'bold' },
-  tipText: { fontSize: 12, color: '#92400e', flex: 1, lineHeight: 18 },
+  menuName: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1e293b',
+    flex: 1,
+  },
+  menuPrice: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#ea580c',
+  },
+  highlightItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  highlightText: {
+    fontSize: 12,
+    color: '#334155',
+    flex: 1,
+    lineHeight: 18,
+  },
+  tipItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  tipText: {
+    fontSize: 12,
+    color: '#475569',
+    flex: 1,
+    lineHeight: 18,
+  },
+  addressText: {
+    fontSize: 12.5,
+    color: '#475569',
+    marginTop: 8,
+    lineHeight: 18,
+  },
+  openMapBtn: {
+    backgroundColor: '#00897b',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 10,
+    marginTop: 14,
+  },
+  openMapBtnText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '800',
+  },
 
-  /* Bottom Bar */
-  bottomBar: {
+  /* Sticky Bottom Action Bar */
+  bottomActionBar: {
     position: 'absolute',
     bottom: 0,
     left: 0,
@@ -458,26 +706,68 @@ const styles = StyleSheet.create({
     borderTopColor: '#e2e8f0',
     paddingHorizontal: 16,
     paddingTop: 10,
-    paddingBottom: 24,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -3 },
     shadowOpacity: 0.1,
     shadowRadius: 6,
     elevation: 10,
   },
-  bottomPriceLabel: { fontSize: 10, color: '#64748b', fontWeight: '600' },
-  bottomPriceVal: { fontSize: 16, fontWeight: '900', color: '#ea580c' },
-  bottomDirectBtn: {
-    backgroundColor: '#ea580c',
+  callBtn: {
+    flex: 1,
+    backgroundColor: '#ecfdf5',
+    borderWidth: 1.5,
+    borderColor: '#a7f3d0',
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
-    paddingHorizontal: 18,
     paddingVertical: 12,
-    borderRadius: 10
+    borderRadius: 12,
   },
-  bottomDirectBtnText: { color: '#ffffff', fontSize: 12, fontWeight: '800' }
+  callBtnText: {
+    color: '#065f46',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  directBtn: {
+    flex: 1.3,
+    backgroundColor: '#ff5722',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    borderRadius: 12,
+    shadowColor: '#ff5722',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  directBtnText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+
+  /* Gallery Modal */
+  galleryModalOverlay: {
+    flex: 1,
+    backgroundColor: '#000000',
+    justifyContent: 'center',
+  },
+  galleryModalHeader: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  galleryModalTitle: { color: '#ffffff', fontSize: 14, fontWeight: '700', flex: 1, marginRight: 10 },
+  modalImage: { width: width - 20, height: 350, borderRadius: 12 },
 });
