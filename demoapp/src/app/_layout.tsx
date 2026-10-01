@@ -40,9 +40,9 @@ export default function RootLayout() {
           <Stack.Screen name="cam-nang" />
           <Stack.Screen name="chi-tiet-bai-viet" />
           <Stack.Screen name="uu-dai" />
-          <Stack.Screen name="don-hang-ve" />
-          <Stack.Screen name="yeu-thich" />
-          <Stack.Screen name="tai-khoan" />
+          <Stack.Screen name="don-hang-ve" options={{ headerShown: false }} />
+          <Stack.Screen name="yeu-thich" options={{ headerShown: false }} />
+          <Stack.Screen name="tai-khoan" options={{ headerShown: false }} />
         </Stack>
         <BottomNavBar />
       </View>

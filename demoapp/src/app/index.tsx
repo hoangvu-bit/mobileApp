@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { SymbolView } from 'expo-symbols';
+import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import {
   ScrollView,
@@ -318,8 +318,9 @@ export default function HomeScreen() {
                 style={styles.bellBtn}
                 onPress={() => router.push('/don-hang-ve')}
                 hitSlop={6}
+                accessibilityLabel="Thông báo đơn hàng và vé"
               >
-                <SymbolView name="bell" size={17} tintColor="#FFFFFF" />
+                <Ionicons name="notifications-outline" size={19} color="#FFFFFF" />
                 <View style={styles.bellAlertDot} />
               </Pressable>
 
@@ -339,7 +340,7 @@ export default function HomeScreen() {
           <View style={styles.searchPillWrapper}>
             <View style={styles.searchPillBar}>
               <View style={styles.searchGlassIcon}>
-                <SymbolView name="magnifyingglass" size={17} tintColor="#94A3B8" />
+                <Ionicons name="search" size={18} color="#94A3B8" />
               </View>
 
               <TextInput
@@ -378,7 +379,11 @@ export default function HomeScreen() {
                 hitSlop={6}
                 accessibilityLabel="Tìm kiếm"
               >
-                <SymbolView name={searchQuery.trim() ? "arrow.right" : "magnifyingglass"} size={14} tintColor="#FFFFFF" />
+                <Ionicons
+                  name={searchQuery.trim() ? "arrow-forward" : "search"}
+                  size={16}
+                  color="#FFFFFF"
+                />
               </Pressable>
             </View>
 
@@ -415,7 +420,7 @@ export default function HomeScreen() {
             {/* Header info */}
             <View style={styles.searchResultsHeaderRow}>
               <View style={styles.searchResultsHeaderLeft}>
-                <SymbolView name="magnifyingglass.circle.fill" size={20} tintColor="#047857" />
+                <Ionicons name="search-circle" size={24} color="#047857" />
                 <View style={{ marginLeft: 8 }}>
                   <Text style={styles.searchResultsTitle}>
                     Kết quả cho <Text style={styles.searchKeywordHighlight}>&ldquo;{searchQuery.trim()}&rdquo;</Text>
@@ -471,7 +476,7 @@ export default function HomeScreen() {
                       </Text>
 
                       <View style={styles.searchResultLocRow}>
-                        <SymbolView name="mappin" size={12} tintColor="#047857" />
+                        <Ionicons name="location" size={12} color="#047857" />
                         <Text style={styles.searchResultLocText} numberOfLines={1}>
                           {item.location}
                         </Text>
@@ -491,7 +496,7 @@ export default function HomeScreen() {
                           <Text style={styles.searchResultActionBtnText}>
                             {item.badgeType === 'destination' ? 'Khám phá' : item.badgeType === 'hotel' ? 'Xem phòng' : 'Đặt vé'}
                           </Text>
-                          <SymbolView name="arrow.right" size={11} tintColor="#FFFFFF" />
+                          <Ionicons name="arrow-forward" size={11} color="#FFFFFF" />
                         </View>
                       </View>
                     </View>
@@ -515,14 +520,14 @@ export default function HomeScreen() {
                     </Text>
                   </View>
                   <View style={styles.moreTicketsArrow}>
-                    <SymbolView name="chevron.right" size={14} tintColor="#047857" />
+                    <Ionicons name="chevron-forward" size={14} color="#047857" />
                   </View>
                 </Pressable>
               </View>
             ) : (
               <View style={styles.emptySearchContainer}>
                 <View style={styles.emptyIconCircle}>
-                  <SymbolView name="magnifyingglass" size={30} tintColor="#94A3B8" />
+                  <Ionicons name="search" size={30} color="#94A3B8" />
                 </View>
                 <Text style={styles.emptySearchTitle}>Không tìm thấy kết quả nào</Text>
                 <Text style={styles.emptySearchDesc}>
@@ -546,7 +551,7 @@ export default function HomeScreen() {
           <>
 
         {/* ========================================================================= */}
-        {/* BEGIN: QuickServicesGrid (5 Squircle Categories -mt-8 from Stitch) */}
+        {/* BEGIN: QuickServicesGrid (5 Custom Category Logos) */}
         {/* ========================================================================= */}
         <View style={styles.quickServicesWrapper}>
           <View style={styles.quickServicesCard}>
@@ -554,8 +559,12 @@ export default function HomeScreen() {
               style={styles.categoryItem}
               onPress={() => router.push('/ve-du-lich')}
             >
-              <View style={[styles.categoryIconBox, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}>
-                <Text style={styles.categoryEmoji}>🎟️</Text>
+              <View style={styles.categoryIconBox}>
+                <Image
+                  source={require('../../assets/images/categories/ticket.png')}
+                  style={styles.categoryImg}
+                  contentFit="cover"
+                />
               </View>
               <Text style={styles.categoryLabel}>Vé du lịch</Text>
             </Pressable>
@@ -564,8 +573,12 @@ export default function HomeScreen() {
               style={styles.categoryItem}
               onPress={() => router.push('/luu-tru')}
             >
-              <View style={[styles.categoryIconBox, { backgroundColor: '#F0FDFA', borderColor: '#99F6E4' }]}>
-                <Text style={styles.categoryEmoji}>🏨</Text>
+              <View style={styles.categoryIconBox}>
+                <Image
+                  source={require('../../assets/images/categories/hotel.png')}
+                  style={styles.categoryImg}
+                  contentFit="cover"
+                />
               </View>
               <Text style={styles.categoryLabel}>Lưu trú</Text>
             </Pressable>
@@ -574,8 +587,12 @@ export default function HomeScreen() {
               style={styles.categoryItem}
               onPress={() => router.push('/tour')}
             >
-              <View style={[styles.categoryIconBox, { backgroundColor: '#FFF7ED', borderColor: '#FED7AA' }]}>
-                <Text style={styles.categoryEmoji}>🧭</Text>
+              <View style={styles.categoryIconBox}>
+                <Image
+                  source={require('../../assets/images/categories/tour.png')}
+                  style={styles.categoryImg}
+                  contentFit="cover"
+                />
               </View>
               <Text style={styles.categoryLabel}>Tour</Text>
             </Pressable>
@@ -584,8 +601,12 @@ export default function HomeScreen() {
               style={styles.categoryItem}
               onPress={() => router.push('/khu-sinh-thai')}
             >
-              <View style={[styles.categoryIconBox, { backgroundColor: '#ECFDF5', borderColor: '#A7F3D0' }]}>
-                <Text style={styles.categoryEmoji}>🌿</Text>
+              <View style={styles.categoryIconBox}>
+                <Image
+                  source={require('../../assets/images/categories/eco.png')}
+                  style={styles.categoryImg}
+                  contentFit="cover"
+                />
               </View>
               <Text style={styles.categoryLabel}>Sinh thái</Text>
             </Pressable>
@@ -594,8 +615,12 @@ export default function HomeScreen() {
               style={styles.categoryItem}
               onPress={() => router.push('/am-thuc')}
             >
-              <View style={[styles.categoryIconBox, { backgroundColor: '#FFF1F2', borderColor: '#FECDD3' }]}>
-                <Text style={styles.categoryEmoji}>🍜</Text>
+              <View style={styles.categoryIconBox}>
+                <Image
+                  source={require('../../assets/images/categories/food.png')}
+                  style={styles.categoryImg}
+                  contentFit="cover"
+                />
               </View>
               <Text style={styles.categoryLabel}>Ẩm thực</Text>
             </Pressable>
@@ -617,7 +642,7 @@ export default function HomeScreen() {
               hitSlop={8}
             >
               <Text style={styles.seeAllEmeraldText}>Xem tất cả</Text>
-              <SymbolView name="chevron.right" size={13} tintColor="#059669" />
+              <Ionicons name="chevron-forward" size={13} color="#059669" />
             </Pressable>
           </View>
 
@@ -773,7 +798,7 @@ export default function HomeScreen() {
                       <Text style={styles.flashBadgeDiscountText}>{item.discount}</Text>
                     </View>
                     <View style={styles.flashConfirmBadge}>
-                      <SymbolView name="checkmark" size={10} tintColor="#34D399" />
+                      <Ionicons name="checkmark-sharp" size={10} color="#34D399" />
                       <Text style={styles.flashConfirmText}>Xác nhận tức thì</Text>
                     </View>
                   </View>
@@ -841,7 +866,7 @@ export default function HomeScreen() {
               hitSlop={8}
             >
               <Text style={styles.seeAllEmeraldText}>Khám phá</Text>
-              <SymbolView name="chevron.right" size={13} tintColor="#059669" />
+              <Ionicons name="chevron-forward" size={13} color="#059669" />
             </Pressable>
           </View>
 
@@ -930,7 +955,7 @@ export default function HomeScreen() {
               hitSlop={8}
             >
               <Text style={styles.seeAllEmeraldText}>Xem tất cả</Text>
-              <SymbolView name="chevron.right" size={13} tintColor="#059669" />
+              <Ionicons name="chevron-forward" size={13} color="#059669" />
             </Pressable>
           </View>
           <Text style={styles.sectionSublead}>
@@ -955,7 +980,7 @@ export default function HomeScreen() {
                     </View>
                   )}
                   <View style={styles.hotelInstantBadge}>
-                    <SymbolView name="checkmark" size={9} tintColor="#34D399" />
+                    <Ionicons name="checkmark-sharp" size={10} color="#34D399" />
                     <Text style={styles.hotelInstantText}>Xác nhận tức thì</Text>
                   </View>
                 </View>
@@ -1008,7 +1033,7 @@ export default function HomeScreen() {
               hitSlop={8}
             >
               <Text style={styles.seeAllEmeraldText}>Xem tất cả</Text>
-              <SymbolView name="chevron.right" size={13} tintColor="#059669" />
+              <Ionicons name="chevron-forward" size={13} color="#059669" />
             </Pressable>
           </View>
           <Text style={styles.sectionSublead}>
@@ -1039,7 +1064,7 @@ export default function HomeScreen() {
                     <Text style={styles.ticketBadgeGreenText}>{ticket.tag}</Text>
                   </View>
                   <View style={styles.hotelInstantBadge}>
-                    <SymbolView name="checkmark" size={9} tintColor="#34D399" />
+                    <Ionicons name="checkmark-sharp" size={10} color="#34D399" />
                     <Text style={styles.hotelInstantText}>Xác nhận tức thì</Text>
                   </View>
                 </View>
@@ -1086,7 +1111,7 @@ export default function HomeScreen() {
               hitSlop={8}
             >
               <Text style={styles.seeAllOrangeText}>Xem thêm</Text>
-              <SymbolView name="chevron.right" size={13} tintColor="#F97316" />
+              <Ionicons name="chevron-forward" size={13} color="#F97316" />
             </Pressable>
           </View>
 
@@ -1131,7 +1156,7 @@ export default function HomeScreen() {
               hitSlop={8}
             >
               <Text style={styles.seeAllEmeraldText}>Xem điểm đến</Text>
-              <SymbolView name="chevron.right" size={13} tintColor="#059669" />
+              <Ionicons name="chevron-forward" size={13} color="#059669" />
             </Pressable>
           </View>
           <Text style={styles.sectionSublead}>
@@ -1222,7 +1247,7 @@ export default function HomeScreen() {
         <View style={styles.trustBannerWrapper}>
           <View style={styles.trustCard}>
             <View style={styles.trustIconCircle}>
-              <SymbolView name="checkmark.shield.fill" size={18} tintColor="#FFFFFF" />
+              <Ionicons name="shield-checkmark" size={18} color="#FFFFFF" />
             </View>
             <View style={styles.trustTextCol}>
               <Text style={styles.trustTitle}>Vé chuẩn đại lý - Đi ngay không chờ</Text>
@@ -1897,19 +1922,23 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   categoryIconBox: {
-    width: 46,
-    height: 46,
-    borderRadius: 16,
-    borderWidth: 1,
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 5,
     shadowColor: '#000000',
-    shadowOpacity: 0.03,
-    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  categoryEmoji: {
-    fontSize: 20,
+  categoryImg: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 14,
   },
   categoryLabel: {
     fontSize: 11,

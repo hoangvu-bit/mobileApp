@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, Image } from 'react-native';
-import { SymbolView } from 'expo-symbols';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -68,19 +68,19 @@ export default function GlobalHeader() {
 
         <View style={styles.headerIcons}>
           <Pressable hitSlop={6} onPress={() => router.push('/ve-du-lich')}>
-            <SymbolView name="magnifyingglass" size={20} tintColor="#334155" />
+            <Ionicons name="search-outline" size={20} color="#334155" />
           </Pressable>
           <Pressable hitSlop={6} onPress={() => router.push('/don-hang-ve')}>
             <View>
-              <SymbolView name="bag" size={20} tintColor="#334155" />
+              <Ionicons name="ticket-outline" size={20} color="#334155" />
               <View style={styles.badge}><Text style={styles.badgeText}>1</Text></View>
             </View>
           </Pressable>
           <Pressable hitSlop={6} onPress={() => router.push('/tai-khoan')}>
-            <SymbolView name="person.circle" size={20} tintColor="#334155" />
+            <Ionicons name="person-circle-outline" size={22} color="#334155" />
           </Pressable>
           <Pressable hitSlop={6} onPress={() => router.push('/')}>
-            <SymbolView name="line.3.horizontal" size={20} tintColor="#334155" />
+            <Ionicons name="menu-outline" size={22} color="#334155" />
           </Pressable>
         </View>
       </View>
