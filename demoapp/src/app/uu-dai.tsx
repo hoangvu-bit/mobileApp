@@ -1,6 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, StatusBar, TextInput, Alert } from 'react-native';
+import React, { useState, useMemo, useRef } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Pressable,
+  StatusBar,
+  TextInput,
+  Alert,
+  Modal,
+} from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SymbolView } from 'expo-symbols';
 import { Image } from 'expo-image';
 
@@ -16,8 +27,13 @@ interface Voucher {
   expiryUrgent?: boolean;
   usedPercent: number;
   isSaved: boolean;
+  accentColor: string;
+  lightBg: string;
+  borderTint: string;
+  badgeTag: string;
   badgeBg: string;
   badgeText: string;
+  terms: string[];
 }
 
 const INITIAL_VOUCHERS: Voucher[] = [
@@ -32,8 +48,18 @@ const INITIAL_VOUCHERS: Voucher[] = [
     hsd: 'HSD: 28/02',
     usedPercent: 78,
     isSaved: false,
-    badgeBg: '#ffdad4',
-    badgeText: '#b32113',
+    accentColor: '#DC2626',
+    lightBg: '#FEF2F2',
+    borderTint: '#FECACA',
+    badgeTag: 'Cáp treo',
+    badgeBg: '#FEE2E2',
+    badgeText: '#B91C1C',
+    terms: [
+      'Áp dụng cho mọi vé cáp treo Sun World Núi Bà Đen trên hệ thống iGovi.',
+      'Giảm trực tiếp 50.000đ cho đơn hàng từ 300.000đ.',
+      'Mỗi khách hàng được áp dụng 1 lần trong suốt thời gian diễn ra chương trình.',
+      'Hạn sử dụng đến hết ngày 28/02/2026.',
+    ],
   },
   {
     id: 'v2',
@@ -47,8 +73,18 @@ const INITIAL_VOUCHERS: Voucher[] = [
     expiryUrgent: true,
     usedPercent: 92,
     isSaved: false,
-    badgeBg: '#ffdcbe',
-    badgeText: '#874e00',
+    accentColor: '#D97706',
+    lightBg: '#FFFBEB',
+    borderTint: '#FDE68A',
+    badgeTag: 'Buffet ẩm thực',
+    badgeBg: '#FEF3C7',
+    badgeText: '#92400E',
+    terms: [
+      'Áp dụng cho vé Buffet trưa Vân Sơn đỉnh núi Bà Đen.',
+      'Giảm 100.000đ cho đơn đặt vé ẩm thực từ 500.000đ.',
+      'Vé áp dụng sử dụng trực tiếp tại quầy check-in nhà hàng Vân Sơn.',
+      'Mã ưu đãi đặc biệt có hiệu lực trong ngày hôm nay.',
+    ],
   },
   {
     id: 'v3',
@@ -61,8 +97,18 @@ const INITIAL_VOUCHERS: Voucher[] = [
     hsd: 'HSD: 15/03',
     usedPercent: 64,
     isSaved: false,
-    badgeBg: '#dee8ff',
-    badgeText: '#006b5f',
+    accentColor: '#0B4A37',
+    lightBg: '#F0FDF4',
+    borderTint: '#BBF7D0',
+    badgeTag: 'Tour du lịch',
+    badgeBg: '#DCFCE7',
+    badgeText: '#15803D',
+    terms: [
+      'Áp dụng cho các tour trọn gói Tây Ninh, Rừng Tràm, Đồng Tháp.',
+      'Giảm trực tiếp 70.000đ cho nhóm từ 2 người trở lên.',
+      'Bao gồm hướng dẫn viên, xe đưa đón và vé các điểm tham quan.',
+      'Hạn sử dụng đến ngày 15/03/2026.',
+    ],
   },
   {
     id: 'v4',
@@ -75,8 +121,18 @@ const INITIAL_VOUCHERS: Voucher[] = [
     hsd: 'HSD: 31/03',
     usedPercent: 45,
     isSaved: false,
-    badgeBg: '#f0f3ff',
-    badgeText: '#693c00',
+    accentColor: '#2563EB',
+    lightBg: '#EFF6FF',
+    borderTint: '#BFDBFE',
+    badgeTag: 'Ví điện tử',
+    badgeBg: '#DBEAFE',
+    badgeText: '#1D4ED8',
+    terms: [
+      'Áp dụng khi chọn phương thức thanh toán ví ZaloPay hoặc MoMo.',
+      'Giảm thêm 30.000đ cho đơn đặt dịch vụ từ 200.000đ.',
+      'Không áp dụng đồng thời với một số chương trình đối tác thẻ khác.',
+      'Hạn sử dụng đến hết ngày 31/03/2026.',
+    ],
   },
 ];
 
@@ -86,11 +142,12 @@ const DESTINATION_DEALS = [
     name: 'Buffet trưa Vân Sơn Núi Bà Đen',
     sub: 'Hơn 80 món Á - Âu đặc sắc',
     tag: 'Vé QR tức thì',
-    tagColor: '#006b5f',
-    oldPrice: '290.000đ',
+    tagBg: '#059669',
+    oldPrice: '299.000đ',
     discount: '-14%',
     price: '250.000đ',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAtpdnq32CxUpTr_pSlBgV5-jfSeK_Q2H14FGBJ9aSfxvNintVaIatDLrTyN5abKcqlW9OYN9rNk7zVMFTBjHwiHwEOXSRnfLlbt_eJ5PxYK4EIJ7AL7pkvzYVrK7PAW8kZf_xT9ifr9MeCVD6I6GCmhTuEuQOZlWmv7GoSR9lmx7aekv8lVxqX2uUksmK4tbS2Zaj9_y3gENTL3Vr05K_BO8EHjX4xokTVc4UpCf9IMc1ABZ0QjJOc',
+    image:
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuBzCzUaEIkgyaBM0AO8x2GMnrVs48dNGNrP1aBW6oOmB6cEPc2zjRsd--8Phv4oD9BCLI8PktLj0HmkG2y9TR9z2gxV2pHs6afcjIGZYivn6tQx5q-oz8Xvphdwd3fqGp7HOKA2Nbtt07mnNudoMUAS9u7Li9ET4p9xdDFL9MYiNcZLp2LoV7Tq-nQyDima0U2dC5ywZ4fvBHbMN2_XZVsxq6D_98h3eI-XwMiiPOtOlNo3YVzxagMrOA',
     location: 'Tây Ninh',
     route: '/chi-tiet-ve',
   },
@@ -99,11 +156,12 @@ const DESTINATION_DEALS = [
     name: 'Vé cáp treo Chùa Hang Núi Bà Đen',
     sub: 'Khứ hồi tuyến Chùa Hang',
     tag: 'Bán chạy',
-    tagColor: '#aa6400',
+    tagBg: '#D97706',
     oldPrice: '280.000đ',
     discount: '-12%',
     price: '245.000đ',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAAGzag4JWCmqBtN4mYGy6MERp-frzyeBC6nRoGOAPRwvo_KRQv212W5LFMkH4h-aNMgVbvRcmo8YRhRZ0xjAevClzlZ2h59cQeAt_-ciE-QVymPMePoC1eTnJmazNG68usffuP6JhObJw0K-OPnLmNotdYxlLwsizfiP-xNl_jtEmdYKUE-iVJqyk2pdB5IxCECOQwlcjkzH29D3-Kqy2z0oEo2wI1YxaRAjBBi4fQOaqWRaGrdT_Q',
+    image:
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuDfcIvOC1gxYFDSQ6Ub1DGTVu-8zNRyt2SsoqTiWlxDODsCB-aR8dJF97wKhehXxbOurfZVxIJTK8p6RJ1T4D9zNvmvy2THEX77I7EBrxPbQ5yZ_c0XqO9Cugacww1NoHfAjQLa3ztKsPB7JtJ9G-mfxCqQ2HB5798_brtvWzBLy6ppWWOyy5q8Eb1VQVYDQS2dNL7Zx8d-ZavEPyyuq8HAkEo-GyHgtgNJw9OiCnwZbOcWiJq7hqInAQ',
     location: 'Tây Ninh',
     route: '/chi-tiet-ve',
   },
@@ -112,11 +170,12 @@ const DESTINATION_DEALS = [
     name: 'Tour Săn Mây Cầu Đất Đà Lạt 1 ngày',
     sub: 'Đón tận nơi tại khách sạn',
     tag: 'Ưu đãi tuần',
-    tagColor: '#b32113',
+    tagBg: '#EA580C',
     oldPrice: '350.000đ',
-    discount: '-20%',
-    price: '280.000đ',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAxtVyo6jfAZaAtobBsbx4P6Yab0-8VZlB0HRK0JbUisjyAkpcJk3a7aLeA30IA20mMmuK0Zs5yf6t9ZYWYHAZjyQT-nEwpKlvmYKOWBO1h4qS0-tFc7DGJzV1WfV_hopaBDQ85WiMXSzCx0s23TrW1Wuh14zq9Mf6gLYcEBUjvkunqdjDsl75xp-zfpbBd67MyMNRTnrj5NXGRekTle7y6548nbFeOEgLbveA_w49x_BCDIwsmhSIl',
+    discount: '-15%',
+    price: '299.000đ',
+    image:
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuAQm2J5lQsCHqP78bWx11PBfyeMHukqq_Mjg_-u9io_z3jJiJpNND9jjJQGpagvFRy5KsvXdCNP8dBQl3xfW-ZpEyK0a2--B40Da78-_oxFvTqHCn7QyAjoXSlrw8EejENPsyLbCr4ba4VzCfgQ6slyy6MfVCDIgBm3xJeFwCWUymuPQCDnD7AVuwcNwdffMUrmyz7nZhbbn6Mlg7wlLaIGbQOyh-rG4Bcp5eo4E_rp5XEJKUnK27s8kA',
     location: 'Đà Lạt',
     route: '/tour-da-lat',
   },
@@ -125,18 +184,30 @@ const DESTINATION_DEALS = [
     name: 'Vé show Tinh Hoa Việt Nam Phú Quốc',
     sub: 'Trực tiếp qua cổng không xếp hàng',
     tag: 'Vé QR tức thì',
-    tagColor: '#006b5f',
+    tagBg: '#059669',
     oldPrice: '300.000đ',
-    discount: '-16%',
-    price: '250.000đ',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAfokXgcQbyvHgUYKyd0ZVjjXi7c_D6S3kMPJLwjFNxNMGzKJ8f5H0AwqTYf7y7LDPooOexz5gcPlZWjIvVYk4bIRAG6ccle8qAfKtrzDm7hhKkjs7E_tnDKFFOcAig9ElRckgyN54UtPd5Flhcvjiv6vv3asE5AvZyHZufEm_Xv9q8VVn31OWx9RVMWHrx-xvwm2BA3W46L6wvkWIHOIPpNMy7VUCLHOXB71XGVlTJDBiNSH94WbyP',
+    discount: '-10%',
+    price: '270.000đ',
+    image:
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuC9tlLHc-CdP2a-kZWrTLAZXAeAQhjLtQuoxOepwRjXl0fjXZkdLH6xEiWA5JKQfr0uua4qljuuQErKQviYWP64ZY5YuEDCWdTljq79tD7FJeW5GuHZW_LdbFU_aIIjrxVEkR56MvOCs0r5qk1KdBSR1ZpaCN5z7a7p_3NuXi2RMB6GEz-lUfE60yxnerfi21seexglcfxI9K_5AcWwJ16YQdavNrKWYz0afh_-ovDglVCH1e4PZ9KSuQ',
     location: 'Phú Quốc',
     route: '/chi-tiet-ve',
   },
 ];
 
+const CATEGORY_CHIPS = [
+  { id: 'all', label: 'Tất cả' },
+  { id: 'cap-treo', label: 'Vé cáp treo & Tham quan' },
+  { id: 'am-thuc', label: 'Ẩm thực & Buffet' },
+  { id: 'luu-tru', label: 'Lưu trú & Homestay' },
+  { id: 'tour', label: 'Tour du lịch' },
+  { id: 'vi', label: 'Ví điện tử' },
+];
+
 export default function UuDaiScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const mainScrollRef = useRef<ScrollView>(null);
 
   // Search & filter states
   const [searchQuery, setSearchQuery] = useState('');
@@ -145,43 +216,22 @@ export default function UuDaiScreen() {
   const [voucherList, setVoucherList] = useState<Voucher[]>(INITIAL_VOUCHERS);
   const [savedCount, setSavedCount] = useState(4);
   const [customCode, setCustomCode] = useState('');
+  const [heroClaimed, setHeroClaimed] = useState(false);
 
-  // Countdown timer for Flash Deal
-  const [timeLeft, setTimeLeft] = useState({ hours: 2, minutes: 45, seconds: 18 });
+  // Modal detail
+  const [selectedModalVoucher, setSelectedModalVoucher] = useState<Voucher | null>(null);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        let { hours, minutes, seconds } = prev;
-        if (seconds > 0) {
-          seconds -= 1;
-        } else if (minutes > 0) {
-          minutes -= 1;
-          seconds = 59;
-        } else if (hours > 0) {
-          hours -= 1;
-          minutes = 59;
-          seconds = 59;
-        }
-        return { hours, minutes, seconds };
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const formatTwoDigits = (num: number) => String(num).padStart(2, '0');
-
-  // Handle saving voucher
+  // Toggle save voucher
   const handleToggleSaveVoucher = (id: string, code: string) => {
-    setVoucherList(prev =>
-      prev.map(v => {
+    setVoucherList((prev) =>
+      prev.map((v) => {
         if (v.id === id) {
           const nextState = !v.isSaved;
           if (nextState) {
-            setSavedCount(c => c + 1);
-            Alert.alert('Thành công', `Đã lưu mã [${code}] vào kho voucher của bạn!`);
+            setSavedCount((c) => c + 1);
+            Alert.alert('Thành công', `Đã lưu mã [${code}] vào ví voucher của bạn!`);
           } else {
-            setSavedCount(c => Math.max(0, c - 1));
+            setSavedCount((c) => Math.max(0, c - 1));
           }
           return { ...v, isSaved: nextState };
         }
@@ -190,7 +240,18 @@ export default function UuDaiScreen() {
     );
   };
 
-  // Handle applying input voucher
+  // Claim hero promo
+  const handleClaimHeroPromo = () => {
+    if (heroClaimed) {
+      Alert.alert('Thông báo', 'Bạn đã nhận mã ưu đãi hè [IGOVI150] rồi!');
+      return;
+    }
+    setHeroClaimed(true);
+    setSavedCount((c) => c + 1);
+    Alert.alert('Chúc mừng!', 'Đã nhận thành công mã [IGOVI150] giảm đến 150K cho đơn trải nghiệm!');
+  };
+
+  // Apply custom code
   const handleApplyCode = () => {
     const code = customCode.trim().toUpperCase();
     if (!code) {
@@ -198,449 +259,575 @@ export default function UuDaiScreen() {
       return;
     }
 
-    if (code === 'CHAOBANMOI' || code === 'IGOVI150' || code === 'IGOVI50') {
-      setSavedCount(c => c + 1);
-      Alert.alert('Thành công', `Mã [${code}] hợp lệ! Đã lưu vào ví voucher của bạn.`);
+    if (
+      code === 'CHAOBANMOI' ||
+      code === 'IGOVI150' ||
+      code === 'SUNWORLD50' ||
+      code === 'BUFFETVANSON' ||
+      code === 'TOURTAYNINH' ||
+      code === 'VIMOI30'
+    ) {
+      setSavedCount((c) => c + 1);
+      Alert.alert('Áp dụng thành công!', `Mã [${code}] hợp lệ! Đã thêm vào ví ưu đãi của bạn.`);
       setCustomCode('');
     } else {
-      Alert.alert('Ưu đãi', `Mã [${code}] đã được ghi nhận. Bạn có thể sử dụng tại bước thanh toán!`);
+      Alert.alert('Thông báo mã', `Mã [${code}] đã được ghi nhận. Bạn có thể sử dụng tại bước thanh toán!`);
       setCustomCode('');
     }
   };
 
   // Filter vouchers
-  const filteredVouchers = voucherList.filter(v => {
-    const matchCategory = selectedCategory === 'all' || v.category === selectedCategory;
-    const matchSearch =
-      v.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      v.desc.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      v.code.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchValid = onlyValid ? !v.expiryUrgent : true;
-    return matchCategory && matchSearch && matchValid;
-  });
+  const filteredVouchers = useMemo(() => {
+    return voucherList.filter((v) => {
+      const matchCategory = selectedCategory === 'all' || v.category === selectedCategory;
+      const matchSearch =
+        v.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        v.desc.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        v.code.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchValid = onlyValid ? !v.expiryUrgent : true;
+      return matchCategory && matchSearch && matchValid;
+    });
+  }, [voucherList, selectedCategory, searchQuery, onlyValid]);
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f9f9ff" />
+      <StatusBar barStyle="light-content" backgroundColor="#0B4A37" />
 
-      {/* Subpage Header with Navigation Back */}
-      <View style={styles.subHeader}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn} hitSlop={10}>
-          <SymbolView name="chevron.left" size={20} tintColor="#b32113" />
-          <Text style={styles.backBtnText}>Quay lại</Text>
-        </Pressable>
-        <View style={styles.subHeaderCenter}>
-          <Text style={styles.subHeaderTitle}>Ưu Đãi & Khuyến Mãi</Text>
-          <Text style={styles.subHeaderSubtitle}>Mã giảm giá, voucher độc quyền iGovi</Text>
+      {/* BEGIN: Header (TopBar & Header chuẩn Stitch đồng bộ phong cách vé du lịch) */}
+      <View style={[styles.headerContainer, { paddingTop: Math.max(insets.top, 14) }]}>
+        <View style={styles.headerLeft}>
+          <Pressable
+            onPress={() => router.back()}
+            style={styles.backButton}
+            hitSlop={8}
+            accessibilityLabel="Quay lại"
+          >
+            <SymbolView name="chevron.left" size={17} tintColor="#FFFFFF" />
+          </Pressable>
+
+          <View style={styles.headerTitleCol}>
+            <Text style={styles.headerTitleText}>Ưu Đãi & Khuyến Mãi</Text>
+            <View style={styles.headerSubRow}>
+              <SymbolView name="sparkles" size={11} tintColor="#6EE7B7" />
+              <Text style={styles.headerSubText}>Mã giảm giá & voucher độc quyền</Text>
+            </View>
+          </View>
         </View>
-        <Pressable 
-          style={styles.walletPill}
-          onPress={() => Alert.alert('Ví voucher', `Bạn đang có ${savedCount} mã voucher sẵn sàng sử dụng khi thanh toán!`)}
-        >
-          <SymbolView name="creditcard.fill" size={16} tintColor="#b32113" />
-          <Text style={styles.walletPillCount}>{savedCount}</Text>
-        </Pressable>
+
+        <View style={styles.headerRight}>
+          <Pressable
+            style={styles.headerIconBtn}
+            onPress={() => {
+              mainScrollRef.current?.scrollTo({ y: 140, animated: true });
+            }}
+            hitSlop={8}
+            accessibilityLabel="Tìm kiếm"
+          >
+            <SymbolView name="magnifyingglass" size={15} tintColor="#FFFFFF" />
+          </Pressable>
+
+          <Pressable
+            style={styles.headerIconBtn}
+            onPress={() =>
+              Alert.alert('Ví voucher & Ưu đãi', `Bạn đang có ${savedCount} mã voucher sẵn sàng sử dụng!`)
+            }
+            hitSlop={8}
+            accessibilityLabel="Thông báo ưu đãi"
+          >
+            <SymbolView name="bell" size={15} tintColor="#FFFFFF" />
+            <View style={styles.notificationDot} />
+          </Pressable>
+        </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        
-        {/* Dynamic Notification / Top Incentive Ribbon */}
-        <View style={styles.ribbon}>
-          <View style={styles.ribbonLeft}>
-            <View style={styles.ribbonIconWrap}>
-              <SymbolView name="flame.fill" size={20} tintColor="#fff" />
+      {/* BEGIN: Scrollable Content Body */}
+      <ScrollView
+        ref={mainScrollRef}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* BEGIN: Featured Promo Banner Hero ("Săn mã giảm đến 150K") */}
+        <View style={styles.heroPromoBanner}>
+          <View style={styles.heroGlowCircle} />
+          <View style={styles.heroPromoContent}>
+            <View style={styles.heroPromoLeft}>
+              <View style={styles.heroExclusivePill}>
+                <Text style={styles.heroExclusiveText}>★ Ưu đãi độc quyền iGovi</Text>
+              </View>
+              <Text style={styles.heroPromoTitle}>Săn mã giảm đến 150K</Text>
+              <Text style={styles.heroPromoDesc}>Áp dụng cho mọi đơn trải nghiệm hè này</Text>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.ribbonSubtitle}>ƯU ĐÃI ĐỘC QUYỀN IGOVI</Text>
-              <Text style={styles.ribbonTitle}>Săn mã giảm đến 150K</Text>
-            </View>
+
+            <Pressable
+              style={[styles.heroClaimBtn, heroClaimed && styles.heroClaimBtnActive]}
+              onPress={handleClaimHeroPromo}
+            >
+              <Text style={[styles.heroClaimBtnText, heroClaimed && styles.heroClaimBtnTextActive]}>
+                {heroClaimed ? 'Đã nhận ✓' : 'Nhận ngay'}
+              </Text>
+            </Pressable>
           </View>
-          <Pressable 
-            style={styles.ribbonBtn}
-            onPress={() => {
-              setSavedCount(c => c + 1);
-              Alert.alert('Chúc mừng!', 'Bạn đã nhận thành công mã [IGOVI150] giảm 150.000đ!');
-            }}
-          >
-            <Text style={styles.ribbonBtnText}>Nhận ngay</Text>
-          </Pressable>
         </View>
 
-        {/* Search & Filter Controls */}
-        <View style={styles.searchRow}>
-          <View style={styles.searchBox}>
-            <SymbolView name="magnifyingglass" size={20} tintColor="#b32113" />
-            <TextInput
-              placeholder="Tìm kiếm mã giảm giá, ưu đãi..."
-              style={styles.searchInput}
-              placeholderTextColor="#8f706b"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-            {searchQuery.length > 0 && (
-              <Pressable onPress={() => setSearchQuery('')} hitSlop={6}>
-                <SymbolView name="xmark.circle.fill" size={18} tintColor="#8f706b" />
-              </Pressable>
-            )}
+        {/* BEGIN: Search & Filter Segment */}
+        <View style={styles.searchFilterSection}>
+          <View style={styles.searchRow}>
+            {/* Search Input Box */}
+            <View style={styles.searchBox}>
+              <SymbolView name="magnifyingglass" size={16} tintColor="#94A3B8" />
+              <TextInput
+                placeholder="Tìm kiếm mã giảm giá, ưu đãi..."
+                style={styles.searchInput}
+                placeholderTextColor="#94A3B8"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+              {searchQuery.length > 0 && (
+                <Pressable onPress={() => setSearchQuery('')} hitSlop={8}>
+                  <SymbolView name="xmark.circle.fill" size={15} tintColor="#94A3B8" />
+                </Pressable>
+              )}
+            </View>
+
+            {/* Quick Filter Pill: "Còn hạn" */}
+            <Pressable
+              style={[styles.filterPillBtn, onlyValid && styles.filterPillBtnActive]}
+              onPress={() => setOnlyValid(!onlyValid)}
+            >
+              <Text style={[styles.filterPillText, onlyValid && styles.filterPillTextActive]}>
+                Còn hạn
+              </Text>
+              <SymbolView
+                name={onlyValid ? 'checkmark' : 'chevron.down'}
+                size={11}
+                tintColor={onlyValid ? '#FFFFFF' : '#64748B'}
+              />
+            </Pressable>
           </View>
-          <Pressable
-            style={[styles.validFilterBtn, onlyValid && styles.validFilterBtnActive]}
-            onPress={() => setOnlyValid(!onlyValid)}
+
+          {/* Category Chips Filter */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoryChipsScroll}
           >
-            <SymbolView
-              name="checkmark.seal.fill"
-              size={18}
-              tintColor={onlyValid ? '#ffffff' : '#006b5f'}
-            />
-            <Text style={[styles.validFilterText, onlyValid && styles.validFilterTextActive]}>
-              Còn hạn
-            </Text>
-          </Pressable>
+            {CATEGORY_CHIPS.map((cat) => {
+              const isActive = selectedCategory === cat.id;
+              return (
+                <Pressable
+                  key={cat.id}
+                  style={[styles.catChip, isActive && styles.catChipActive]}
+                  onPress={() => setSelectedCategory(cat.id)}
+                >
+                  <Text style={[styles.catChipText, isActive && styles.catChipTextActive]}>
+                    {cat.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
         </View>
 
-        {/* Category Pills (Horizontal Scrolling Band) */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
-          <Pressable
-            style={[styles.catPill, selectedCategory === 'all' && styles.catPillActive]}
-            onPress={() => setSelectedCategory('all')}
-          >
-            <SymbolView name="star.fill" size={16} tintColor={selectedCategory === 'all' ? '#fff' : '#b32113'} />
-            <Text style={[styles.catPillText, selectedCategory === 'all' && styles.catPillTextActive]}>Tất cả</Text>
-          </Pressable>
-
-          <Pressable
-            style={[styles.catPill, selectedCategory === 'cap-treo' && styles.catPillActive]}
-            onPress={() => setSelectedCategory('cap-treo')}
-          >
-            <SymbolView name="ticket.fill" size={16} tintColor={selectedCategory === 'cap-treo' ? '#fff' : '#b32113'} />
-            <Text style={[styles.catPillText, selectedCategory === 'cap-treo' && styles.catPillTextActive]}>Vé cáp treo & Tham quan</Text>
-          </Pressable>
-
-          <Pressable
-            style={[styles.catPill, selectedCategory === 'am-thuc' && styles.catPillActive]}
-            onPress={() => setSelectedCategory('am-thuc')}
-          >
-            <SymbolView name="fork.knife" size={16} tintColor={selectedCategory === 'am-thuc' ? '#fff' : '#874e00'} />
-            <Text style={[styles.catPillText, selectedCategory === 'am-thuc' && styles.catPillTextActive]}>Ẩm thực & Buffet</Text>
-          </Pressable>
-
-          <Pressable
-            style={[styles.catPill, selectedCategory === 'tour' && styles.catPillActive]}
-            onPress={() => setSelectedCategory('tour')}
-          >
-            <SymbolView name="map.fill" size={16} tintColor={selectedCategory === 'tour' ? '#fff' : '#006b5f'} />
-            <Text style={[styles.catPillText, selectedCategory === 'tour' && styles.catPillTextActive]}>Tour du lịch</Text>
-          </Pressable>
-
-          <Pressable
-            style={[styles.catPill, selectedCategory === 'khach-san' && styles.catPillActive]}
-            onPress={() => setSelectedCategory('khach-san')}
-          >
-            <SymbolView name="building.2.fill" size={16} tintColor={selectedCategory === 'khach-san' ? '#fff' : '#5b403c'} />
-            <Text style={[styles.catPillText, selectedCategory === 'khach-san' && styles.catPillTextActive]}>Khách sạn & Resort</Text>
-          </Pressable>
-
-          <Pressable
-            style={[styles.catPill, selectedCategory === 'vi' && styles.catPillActive]}
-            onPress={() => setSelectedCategory('vi')}
-          >
-            <SymbolView name="creditcard.fill" size={16} tintColor={selectedCategory === 'vi' ? '#fff' : '#b32113'} />
-            <Text style={[styles.catPillText, selectedCategory === 'vi' && styles.catPillTextActive]}>Thanh toán ví</Text>
-          </Pressable>
-        </ScrollView>
-
-        {/* Hero Deal Carousel (Horizontal Bleed with High Tactile Impact) */}
-        <View style={styles.sectionHeader}>
-          <View>
-            <Text style={styles.sectionSubtitle}>ĐẶC QUYỀN IGOVI</Text>
-            <Text style={styles.sectionTitle}>Ưu đãi dành cho bạn</Text>
-          </View>
-          <Pressable style={styles.viewAllBtn} onPress={() => setSelectedCategory('all')}>
-            <Text style={styles.viewAllText}>Xem tất cả</Text>
-            <SymbolView name="chevron.right" size={16} tintColor="#006b5f" />
-          </Pressable>
-        </View>
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.heroScroll}>
-          {/* Card 1: Vermilion Orange-Red Hero Banner */}
-          <Pressable 
-            style={[styles.heroCard, { backgroundColor: '#FF5330' }]}
-            onPress={() => router.push({ pathname: '/chi-tiet-uu-dai', params: { code: 'CHAOBANMOI' } })}
-          >
-            <View style={styles.heroCardTop}>
-              <View style={styles.heroBadge}>
-                <Text style={styles.heroBadgeText}>CHÀO BẠN MỚI</Text>
-              </View>
-              <Text style={styles.heroCode}>Mã: CHAOBANMOI</Text>
-            </View>
-            <View style={styles.heroCardContent}>
-              <Text style={styles.heroCardTitle}>Ưu đãi khách mới</Text>
-              <Text style={styles.heroCardDesc}>Giảm ngay 15% (tối đa 150.000đ) khi đặt vé tham quan hoặc tour đầu tiên.</Text>
-            </View>
-            <View style={styles.heroCardBottom}>
-              <View style={styles.getBtn}>
-                <Text style={styles.getBtnText}>Xem chi tiết ›</Text>
-              </View>
-              <Text style={styles.heroDate}>HSD: 31/03/2026</Text>
-            </View>
-          </Pressable>
-
-          {/* Card 2: Deep Emerald Teal Hero Banner */}
-          <Pressable 
-            style={[styles.heroCard, { backgroundColor: '#008779' }]}
-            onPress={() => router.push({ pathname: '/chi-tiet-uu-dai', params: { code: 'DEALCUOITUAN' } })}
-          >
-            <View style={styles.heroCardTop}>
-              <View style={styles.heroBadge}>
-                <Text style={styles.heroBadgeText}>CUỐI TUẦN RỰC RỠ</Text>
-              </View>
-              <Text style={styles.heroCode}>Giờ vàng T7 & CN</Text>
-            </View>
-            <View style={styles.heroCardContent}>
-              <Text style={styles.heroCardTitle}>Săn deal chớp nhoáng</Text>
-              <Text style={styles.heroCardDesc}>Giảm trực tiếp 80.000đ khi mua từ 2 vé cáp treo Sun World bất kỳ.</Text>
-            </View>
-            <View style={styles.heroCardBottom}>
-              <View style={[styles.getBtn, { backgroundColor: '#fff' }]}>
-                <Text style={[styles.getBtnText, { color: '#006b5f' }]}>Xem chi tiết ›</Text>
-              </View>
-              <Text style={styles.heroDate}>Số lượng có hạn</Text>
-            </View>
-          </Pressable>
-
-          {/* Card 3: Royal Purple Hero Banner */}
-          <Pressable 
-            style={[styles.heroCard, { backgroundColor: '#6366f1' }]}
-            onPress={() => router.push({ pathname: '/chi-tiet-uu-dai', params: { code: 'HOIVIEN10' } })}
-          >
-            <View style={styles.heroCardTop}>
-              <View style={styles.heroBadge}>
-                <Text style={styles.heroBadgeText}>HỘI VIÊN IGOVI</Text>
-              </View>
-              <Text style={styles.heroCode}>Mã: HOIVIEN10</Text>
-            </View>
-            <View style={styles.heroCardContent}>
-              <Text style={styles.heroCardTitle}>Tri ân hội viên thân thiết</Text>
-              <Text style={styles.heroCardDesc}>Giảm 10% tối đa 100.000đ cho mọi đơn đặt vé combo & tour trên 500K.</Text>
-            </View>
-            <View style={styles.heroCardBottom}>
-              <View style={[styles.getBtn, { backgroundColor: '#fff' }]}>
-                <Text style={[styles.getBtnText, { color: '#6366f1' }]}>Xem chi tiết ›</Text>
-              </View>
-              <Text style={styles.heroDate}>HSD: 30/04/2026</Text>
-            </View>
-          </Pressable>
-        </ScrollView>
-
-        {/* Wallet Quick Status & Code Input Card */}
+        {/* BEGIN: User Voucher Wallet & Redeem Box ("Kho voucher của bạn") */}
         <View style={styles.walletCard}>
-          <View style={styles.walletHeader}>
-            <View style={styles.walletHeaderLeft}>
-              <View style={styles.walletIconWrap}>
-                <SymbolView name="creditcard.fill" size={18} tintColor="#b32113" />
+          <View style={styles.walletTopRow}>
+            <View style={styles.walletInfoLeft}>
+              <View style={styles.walletIconBox}>
+                <SymbolView name="ticket.fill" size={18} tintColor="#EA580C" />
               </View>
               <View>
                 <Text style={styles.walletTitle}>Kho voucher của bạn</Text>
-                <Text style={styles.walletSub}>
-                  Bạn đang có <Text style={{ color: '#b32113', fontWeight: 'bold' }}>{savedCount} voucher</Text> sẵn sàng dùng
+                <Text style={styles.walletSubtitle}>
+                  Bạn đang có <Text style={styles.walletCountHighlight}>{savedCount} voucher</Text> sẵn sàng dùng
                 </Text>
               </View>
             </View>
-            <Pressable onPress={() => Alert.alert('Ví voucher', `Bạn có ${savedCount} mã voucher đã lưu trong tài khoản.`)}>
-              <Text style={styles.walletLink}>Ví voucher</Text>
-            </Pressable>
-          </View>
-          
-          <View style={styles.walletInputRow}>
-            <View style={styles.walletInputBox}>
-              <SymbolView name="tag.fill" size={18} tintColor="#8f706b" />
-              <TextInput
-                placeholder="Nhập mã voucher iGovi..."
-                style={styles.walletInput}
-                placeholderTextColor="#8f706b"
-                value={customCode}
-                onChangeText={setCustomCode}
-                autoCapitalize="characters"
-              />
-            </View>
-            <Pressable style={styles.applyBtn} onPress={handleApplyCode}>
-              <Text style={styles.applyBtnText}>Áp dụng</Text>
-            </Pressable>
-          </View>
-        </View>
 
-        {/* Flash Deal Section with Cut-out Ticket Vouchers ("Giờ vàng săn mã") */}
-        <View style={styles.flashDealHeader}>
-          <View style={styles.flashDealHeaderLeft}>
-            <SymbolView name="bolt.fill" size={24} tintColor="#b32113" />
-            <Text style={styles.flashDealTitle}>Giờ vàng săn mã</Text>
-          </View>
-          <View style={styles.timerBadge}>
-            <SymbolView name="timer" size={15} tintColor="#b32113" />
-            <Text style={styles.timerText}>
-              {formatTwoDigits(timeLeft.hours)}:{formatTwoDigits(timeLeft.minutes)}:{formatTwoDigits(timeLeft.seconds)}
-            </Text>
-          </View>
-        </View>
-
-        {/* Vouchers list with ticket cutouts */}
-        {filteredVouchers.map((voucher, idx) => (
-          <Pressable
-            key={voucher.id}
-            style={[styles.ticketCard, idx > 0 && { marginTop: 14 }]}
-            onPress={() => {
-              router.push({
-                pathname: '/chi-tiet-uu-dai',
-                params: {
-                  code: voucher.code,
-                  id: voucher.id,
-                  title: voucher.title,
-                  desc: voucher.desc,
-                  discount: voucher.discount,
-                  minSpend: voucher.minSpend,
-                },
-              });
-            }}
-          >
-            {/* Cutouts on left & right edges */}
-            <View style={styles.ticketLeftCutout} />
-            <View style={styles.ticketRightCutout} />
-
-            {/* Badge Graphic */}
-            <View style={[styles.ticketBadgeWrap, { backgroundColor: voucher.badgeBg }]}>
-              <Text style={[styles.ticketBadgeText, { color: voucher.badgeText }]}>GIẢM</Text>
-              <Text style={[styles.ticketBadgeValue, { color: voucher.badgeText }]}>{voucher.discount}</Text>
-              <Text style={styles.ticketBadgeCondition}>{voucher.minSpend}</Text>
-            </View>
-
-            {/* Info */}
-            <View style={styles.ticketContent}>
-              <View style={styles.ticketMetaRow}>
-                <View style={[styles.ticketTag, { backgroundColor: voucher.badgeBg }]}>
-                  <Text style={[styles.ticketTagText, { color: voucher.badgeText }]}>
-                    {voucher.category === 'cap-treo' ? 'Cáp treo' : voucher.category === 'am-thuc' ? 'Buffet ẩm thực' : voucher.category === 'tour' ? 'Tour du lịch' : 'Ví điện tử'}
-                  </Text>
-                </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Text style={[styles.ticketHsd, voucher.expiryUrgent && { color: '#ba1a1a', fontWeight: '700' }]}>
-                    {voucher.hsd}
-                  </Text>
-                  <Text style={{ fontSize: 10, color: '#b32113', fontWeight: '700' }}>Chi tiết ›</Text>
-                </View>
-              </View>
-
-              <Text style={styles.ticketTitle} numberOfLines={1}>{voucher.title}</Text>
-              <Text style={styles.ticketDesc} numberOfLines={1}>{voucher.desc}</Text>
-
-              {/* Progress & Action */}
-              <View style={styles.ticketBottomRow}>
-                <View style={styles.progressWrap}>
-                  <View style={styles.progressBar}>
-                    <View style={[styles.progressFill, { width: `${voucher.usedPercent}%` }]} />
-                  </View>
-                  <Text style={[styles.progressText, voucher.usedPercent >= 90 && { color: '#b32113', fontWeight: '700' }]}>
-                    {voucher.usedPercent >= 90 ? `Sắp hết - ${voucher.usedPercent}%` : `Đã dùng ${voucher.usedPercent}%`}
-                  </Text>
-                </View>
-
-                <Pressable
-                  style={[styles.saveCodeBtn, voucher.isSaved && styles.saveCodeBtnActive]}
-                  onPress={(e) => {
-                    e.stopPropagation?.();
-                    handleToggleSaveVoucher(voucher.id, voucher.code);
-                  }}
-                >
-                  <Text style={[styles.saveCodeBtnText, voucher.isSaved && styles.saveCodeBtnTextActive]}>
-                    {voucher.isSaved ? 'Đã lưu ✓' : 'Lưu mã'}
-                  </Text>
-                </Pressable>
-              </View>
-            </View>
-          </Pressable>
-        ))}
-
-        {/* Featured Travel Spots & Hot Deals ("Ưu đãi theo điểm đến") */}
-        <View style={styles.destHeader}>
-          <View>
-            <Text style={styles.destSubtitle}>GỢI Ý ĐỂ BẮT ĐẦU</Text>
-            <Text style={styles.destTitle}>Ưu đãi theo điểm đến</Text>
-          </View>
-          <Pressable
-            style={styles.viewAllBtn}
-            onPress={() => router.push('/ve-du-lich')}
-          >
-            <Text style={styles.destLinkText}>Khám phá</Text>
-            <SymbolView name="chevron.right" size={16} tintColor="#b32113" />
-          </Pressable>
-        </View>
-
-        {/* 2-column Product Grid */}
-        <View style={styles.destGrid}>
-          {DESTINATION_DEALS.map((deal) => (
             <Pressable
-              key={deal.id}
-              style={styles.productCard}
-              onPress={() => {
-                if (deal.route === '/chi-tiet-ve') {
-                  router.push({
-                    pathname: '/chi-tiet-ve',
-                    params: {
-                      name: deal.name,
-                      price: deal.price,
-                      location: deal.location,
-                      image: deal.image,
-                      desc: deal.sub,
-                    },
-                  });
-                } else {
-                  router.push(deal.route as any);
-                }
-              }}
+              onPress={() =>
+                Alert.alert(
+                  'Ví voucher',
+                  `Bạn đang sở hữu ${savedCount} mã voucher đã lưu trong tài khoản.`
+                )
+              }
             >
-              <View style={styles.productImageWrap}>
-                <Image source={{ uri: deal.image }} style={styles.productImage} contentFit="cover" />
-                <View style={styles.productBadgeWrap}>
-                  <Text style={[styles.productBadge, { backgroundColor: deal.tagColor }]}>
-                    {deal.tag}
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.productBody}>
-                <View>
-                  <Text style={styles.productName} numberOfLines={2}>{deal.name}</Text>
-                  <Text style={styles.productSub} numberOfLines={1}>{deal.sub}</Text>
-                </View>
-
-                <View style={styles.productPriceRow}>
-                  <View style={styles.oldPriceWrap}>
-                    <Text style={styles.oldPrice}>{deal.oldPrice}</Text>
-                    <Text style={styles.discountBadge}>{deal.discount}</Text>
-                  </View>
-                  <View style={styles.finalPriceWrap}>
-                    <Text style={styles.pricePrefix}>Từ</Text>
-                    <Text style={styles.finalPrice}>{deal.price}</Text>
-                  </View>
-                </View>
-              </View>
+              <Text style={styles.walletLink}>Ví voucher ›</Text>
             </Pressable>
-          ))}
+          </View>
+
+          {/* Quick Voucher Code Input */}
+          <View style={styles.walletInputRow}>
+            <TextInput
+              style={styles.walletInput}
+              placeholder="Nhập mã voucher iGovi..."
+              placeholderTextColor="#94A3B8"
+              value={customCode}
+              onChangeText={setCustomCode}
+              autoCapitalize="characters"
+            />
+            <Pressable style={styles.applyCodeBtn} onPress={handleApplyCode}>
+              <Text style={styles.applyCodeBtnText}>Áp dụng</Text>
+            </Pressable>
+          </View>
         </View>
 
-        {/* Helpful Tips & Guidelines ("Mẹo săn mã cùng iGovi") */}
-        <View style={styles.tipsCard}>
-          <View style={styles.tipIconWrap}>
-            <SymbolView name="lightbulb.fill" size={20} tintColor="#006b5f" />
+        {/* BEGIN: New Customer Special Highlight Card ("Ưu đãi khách mới") */}
+        <Pressable
+          style={styles.newUserBannerCard}
+          onPress={() =>
+            setSelectedModalVoucher({
+              id: 'new_user',
+              code: 'CHAOBANMOI',
+              title: 'Ưu đãi khách mới - iGovi',
+              desc: 'Giảm ngay 15% (tối đa 150.000đ) khi đặt vé tham quan hoặc tour đầu tiên.',
+              category: 'all',
+              discount: '15%',
+              minSpend: 'Cho đơn đầu tiên',
+              hsd: 'HSD: 31/03/2026',
+              usedPercent: 20,
+              isSaved: false,
+              accentColor: '#EA580C',
+              lightBg: '#FFF7ED',
+              borderTint: '#FED7AA',
+              badgeTag: 'Khách mới',
+              badgeBg: '#FFEDD5',
+              badgeText: '#C2410C',
+              terms: [
+                'Áp dụng cho tài khoản đăng ký mới và đặt dịch vụ lần đầu trên iGovi.',
+                'Mức giảm 15% tối đa 150.000đ.',
+                'Áp dụng cho toàn bộ danh mục vé du lịch, buffet và tour trọn gói.',
+                'Hạn sử dụng đến hết ngày 31/03/2026.',
+              ],
+            })
+          }
+        >
+          <View style={styles.newUserTopRow}>
+            <View style={styles.newUserPillBadge}>
+              <Text style={styles.newUserPillText}>CHÀO BẠN MỚI</Text>
+            </View>
+            <View style={styles.newUserDataCode}>
+              <Text style={styles.newUserDataCodeText}>Mã: CHAOBANMOI</Text>
+            </View>
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.tipTitle}>Mẹo săn mã cùng iGovi</Text>
-            <Text style={styles.tipText}>
-              Nhấn <Text style={{ fontWeight: '700', color: '#111c2d' }}>&apos;Lưu mã&apos;</Text> để tự động áp dụng tại bước thanh toán. Mỗi đơn hàng có thể kết hợp mã giảm giá iGovi cùng ưu đãi thanh toán ví điện tử!
-            </Text>
+
+          <Text style={styles.newUserTitle}>Ưu đãi khách mới</Text>
+          <Text style={styles.newUserDesc}>
+            Giảm ngay 15% (tối đa 150.000đ) khi đặt vé tham quan hoặc tour đầu tiên.
+          </Text>
+
+          <View style={styles.newUserBottomRow}>
+            <View style={styles.newUserBtn}>
+              <Text style={styles.newUserBtnText}>Xem chi tiết ›</Text>
+            </View>
+            <Text style={styles.newUserHsd}>HSD: 31/03/2026</Text>
+          </View>
+        </Pressable>
+
+        {/* BEGIN: Exclusive Voucher List ("Ưu đãi dành cho bạn") */}
+        <View style={styles.voucherSection}>
+          <View style={styles.sectionHeaderRow}>
+            <View>
+              <Text style={styles.sectionSubtitle}>ĐẶC QUYỀN IGOVI</Text>
+              <Text style={styles.sectionTitle}>Ưu đãi dành cho bạn</Text>
+            </View>
+            <Pressable onPress={() => setSelectedCategory('all')}>
+              <Text style={styles.sectionSeeAllLink}>Xem tất cả</Text>
+            </Pressable>
+          </View>
+
+          {filteredVouchers.length === 0 ? (
+            <View style={styles.emptyStateBox}>
+              <SymbolView name="tag.slash" size={36} tintColor="#94A3B8" />
+              <Text style={styles.emptyStateText}>
+                Không tìm thấy voucher phù hợp với bộ lọc hiện tại.
+              </Text>
+              <Pressable
+                style={styles.emptyResetBtn}
+                onPress={() => {
+                  setSelectedCategory('all');
+                  setSearchQuery('');
+                  setOnlyValid(false);
+                }}
+              >
+                <Text style={styles.emptyResetBtnText}>Xem lại tất cả ưu đãi</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <View style={styles.vouchersListWrap}>
+              {filteredVouchers.map((voucher) => (
+                <View key={voucher.id} style={styles.ticketStubContainer}>
+                  {/* Perforation Cutouts */}
+                  <View style={styles.notchLeft} />
+                  <View style={styles.notchRight} />
+
+                  {/* Left Discount Stub */}
+                  <View style={[styles.stubLeft, { backgroundColor: voucher.lightBg }]}>
+                    <Text style={[styles.stubTagGiam, { color: voucher.accentColor }]}>
+                      GIẢM
+                    </Text>
+                    <Text style={[styles.stubDiscountVal, { color: voucher.accentColor }]}>
+                      {voucher.discount}
+                    </Text>
+                    <Text style={styles.stubMinSpend}>{voucher.minSpend}</Text>
+                  </View>
+
+                  {/* Dashed Vertical Divider */}
+                  <View style={styles.dashedDivider} />
+
+                  {/* Right Details Stub */}
+                  <View style={styles.stubRight}>
+                    <View style={styles.stubMetaRow}>
+                      <View style={[styles.stubCategoryTag, { backgroundColor: voucher.badgeBg }]}>
+                        <Text style={[styles.stubCategoryTagText, { color: voucher.badgeText }]}>
+                          {voucher.badgeTag}
+                        </Text>
+                      </View>
+
+                      <Pressable
+                        style={styles.stubHsdRow}
+                        onPress={() => setSelectedModalVoucher(voucher)}
+                        hitSlop={6}
+                      >
+                        <Text
+                          style={[
+                            styles.stubHsdText,
+                            voucher.expiryUrgent && styles.stubHsdUrgent,
+                          ]}
+                        >
+                          {voucher.hsd}
+                        </Text>
+                        <Text style={styles.stubDetailsLink}>· Chi tiết ›</Text>
+                      </Pressable>
+                    </View>
+
+                    <Text style={styles.stubTitle} numberOfLines={1}>
+                      {voucher.title}
+                    </Text>
+                    <Text style={styles.stubDesc} numberOfLines={1}>
+                      {voucher.desc}
+                    </Text>
+
+                    {/* Progress Bar & Save Action */}
+                    <View style={styles.stubBottomRow}>
+                      <View style={styles.progressBarWrapper}>
+                        <View style={styles.progressTrack}>
+                          <View
+                            style={[
+                              styles.progressFill,
+                              {
+                                width: `${voucher.usedPercent}%`,
+                                backgroundColor: voucher.accentColor,
+                              },
+                            ]}
+                          />
+                        </View>
+                        <Text
+                          style={[
+                            styles.progressText,
+                            voucher.usedPercent >= 90 && { color: '#DC2626', fontWeight: '800' },
+                          ]}
+                        >
+                          {voucher.usedPercent >= 90
+                            ? `Sắp hết - ${voucher.usedPercent}%`
+                            : `Đã dùng ${voucher.usedPercent}%`}
+                        </Text>
+                      </View>
+
+                      <Pressable
+                        style={[
+                          styles.claimVoucherBtn,
+                          voucher.isSaved && styles.claimVoucherBtnSaved,
+                        ]}
+                        onPress={() => handleToggleSaveVoucher(voucher.id, voucher.code)}
+                        hitSlop={6}
+                      >
+                        <Text
+                          style={[
+                            styles.claimVoucherBtnText,
+                            voucher.isSaved && styles.claimVoucherBtnTextSaved,
+                          ]}
+                        >
+                          {voucher.isSaved ? 'Đã lưu ✓' : 'Lưu mã'}
+                        </Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+
+        {/* BEGIN: Destination Deals Grid ("Ưu đãi theo điểm đến") */}
+        <View style={styles.destDealsSection}>
+          <View style={styles.sectionHeaderRow}>
+            <View>
+              <Text style={styles.sectionSubtitle}>GỢI Ý ĐỂ BẮT ĐẦU</Text>
+              <Text style={styles.sectionTitle}>Ưu đãi theo điểm đến</Text>
+            </View>
+            <Pressable onPress={() => router.push('/ve-du-lich')}>
+              <Text style={styles.sectionSeeAllLink}>Khám phá</Text>
+            </Pressable>
+          </View>
+
+          {/* 2-Column Responsive Deals Grid */}
+          <View style={styles.destGrid}>
+            {DESTINATION_DEALS.map((deal) => (
+              <Pressable
+                key={deal.id}
+                style={styles.dealCard}
+                onPress={() => {
+                  if (deal.route === '/chi-tiet-ve') {
+                    router.push({
+                      pathname: '/chi-tiet-ve',
+                      params: {
+                        name: deal.name,
+                        price: deal.price,
+                        location: deal.location,
+                        image: deal.image,
+                        desc: deal.sub,
+                      },
+                    });
+                  } else {
+                    router.push(deal.route as any);
+                  }
+                }}
+              >
+                {/* Image & Top Badge */}
+                <View style={styles.dealImageContainer}>
+                  <Image source={{ uri: deal.image }} style={styles.dealImage} contentFit="cover" />
+                  <View style={styles.dealDarkOverlay} />
+                  <View style={[styles.dealBadgeTop, { backgroundColor: deal.tagBg }]}>
+                    <Text style={styles.dealBadgeTopText}>{deal.tag}</Text>
+                  </View>
+                </View>
+
+                {/* Deal Card Content */}
+                <View style={styles.dealCardBody}>
+                  <Text style={styles.dealTitle} numberOfLines={2}>
+                    {deal.name}
+                  </Text>
+                  <Text style={styles.dealSub} numberOfLines={1}>
+                    {deal.sub}
+                  </Text>
+
+                  {/* Price Row */}
+                  <View style={styles.dealPriceContainer}>
+                    <View style={styles.dealOldPriceRow}>
+                      <Text style={styles.dealOldPrice}>{deal.oldPrice}</Text>
+                      <View style={styles.dealDiscountPill}>
+                        <Text style={styles.dealDiscountText}>{deal.discount}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.dealCurrentPriceRow}>
+                      <Text style={styles.dealPricePrefix}>Từ </Text>
+                      <Text style={styles.dealPriceVal}>{deal.price}</Text>
+                    </View>
+                  </View>
+                </View>
+              </Pressable>
+            ))}
           </View>
         </View>
 
+        {/* BEGIN: Trust & Guarantee Banner */}
+        <View style={styles.trustBanner}>
+          <View style={styles.trustLeft}>
+            <View style={styles.trustIconBox}>
+              <SymbolView name="checkmark.shield.fill" size={17} tintColor="#FFFFFF" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.trustTitle}>Vé chuẩn đại lý – Đi ngay không chờ</Text>
+              <Text style={styles.trustSubtitle}>
+                Hỗ trợ đối soát mã QR 24/7 trực tiếp tại quầy
+              </Text>
+            </View>
+          </View>
+          <Pressable
+            onPress={() =>
+              Alert.alert('Hỗ trợ iGovi', 'Hotline hỗ trợ đối soát mã QR 24/7: 1900 6868')
+            }
+          >
+            <Text style={styles.trustActionText}>Hỗ trợ</Text>
+          </Pressable>
+        </View>
       </ScrollView>
+
+      {/* BEGIN: Voucher Detail Modal */}
+      <Modal
+        visible={!!selectedModalVoucher}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setSelectedModalVoucher(null)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalSheetContainer}>
+            <View style={styles.modalHeaderRow}>
+              <View style={styles.modalHeaderTitleCol}>
+                <Text style={styles.modalVoucherCode}>MÃ: {selectedModalVoucher?.code}</Text>
+                <Text style={styles.modalVoucherTitle}>{selectedModalVoucher?.title}</Text>
+              </View>
+              <Pressable
+                style={styles.modalCloseBtn}
+                onPress={() => setSelectedModalVoucher(null)}
+                hitSlop={8}
+              >
+                <SymbolView name="xmark" size={16} tintColor="#64748B" />
+              </Pressable>
+            </View>
+
+            <View style={styles.modalDiscountBox}>
+              <Text style={styles.modalDiscountLabel}>MỨC GIẢM ƯU ĐÃI</Text>
+              <Text style={styles.modalDiscountValue}>{selectedModalVoucher?.discount}</Text>
+              <Text style={styles.modalMinSpendText}>{selectedModalVoucher?.minSpend}</Text>
+            </View>
+
+            <Text style={styles.modalSectionTitle}>Điều kiện áp dụng</Text>
+            <View style={styles.modalTermsList}>
+              {selectedModalVoucher?.terms?.map((term, tIdx) => (
+                <View key={tIdx} style={styles.modalTermRow}>
+                  <Text style={styles.modalTermBullet}>•</Text>
+                  <Text style={styles.modalTermText}>{term}</Text>
+                </View>
+              ))}
+            </View>
+
+            <View style={styles.modalActionsRow}>
+              <Pressable
+                style={styles.modalCopyBtn}
+                onPress={() => {
+                  if (selectedModalVoucher) {
+                    Alert.alert(
+                      'Đã sao chép!',
+                      `Mã [${selectedModalVoucher.code}] đã được sao chép vào bộ nhớ tạm.`
+                    );
+                  }
+                }}
+              >
+                <SymbolView name="doc.on.doc" size={15} tintColor="#0B4A37" />
+                <Text style={styles.modalCopyBtnText}>Sao chép mã</Text>
+              </Pressable>
+
+              <Pressable
+                style={styles.modalUseNowBtn}
+                onPress={() => {
+                  const v = selectedModalVoucher;
+                  setSelectedModalVoucher(null);
+                  if (v) {
+                    if (v.category === 'tour') {
+                      router.push('/tour');
+                    } else {
+                      router.push('/ve-du-lich');
+                    }
+                  }
+                }}
+              >
+                <Text style={styles.modalUseNowBtnText}>Sử dụng ngay</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -648,724 +835,900 @@ export default function UuDaiScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9f9ff',
+    backgroundColor: '#F8FAFC',
   },
 
-  // Sub Navigation Bar
-  subHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  /* Header Top Bar & Nav (Đồng bộ chuẩn phong cách xanh #0B4A37 của Vé du lịch) */
+  headerContainer: {
+    backgroundColor: '#0B4A37',
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f3ff',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-  },
-  backBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingVertical: 4,
-  },
-  backBtnText: {
-    color: '#b32113',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  subHeaderCenter: {
-    flex: 1,
-    alignItems: 'center',
-    paddingHorizontal: 8,
-  },
-  subHeaderTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#111c2d',
-  },
-  subHeaderSubtitle: {
-    fontSize: 11,
-    color: '#5b403c',
-    marginTop: 1,
-  },
-  walletPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ffdad4',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 16,
-    gap: 4,
-  },
-  walletPillCount: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#b32113',
-  },
-
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 32,
-  },
-
-  // Ribbon
-  ribbon: {
+    paddingBottom: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#b32113',
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 16,
-    shadowColor: '#b32113',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 4,
+    zIndex: 30,
   },
-  ribbonLeft: {
+  headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
     flex: 1,
   },
-  ribbonIconWrap: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.22)',
+  backButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(255, 255, 255, 0.14)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  ribbonSubtitle: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    opacity: 0.9,
+  headerTitleCol: {
+    flex: 1,
   },
-  ribbonTitle: {
-    color: '#fff',
-    fontSize: 17,
+  headerTitleText: {
+    color: '#FFFFFF',
+    fontSize: 16,
     fontWeight: '800',
+    letterSpacing: -0.2,
   },
-  ribbonBtn: {
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+  headerSubRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 1,
   },
-  ribbonBtnText: {
-    color: '#b32113',
-    fontSize: 12,
-    fontWeight: '700',
+  headerSubText: {
+    color: '#A7F3D0',
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  headerIconBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(255, 255, 255, 0.14)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  notificationDot: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#FF5722',
+    borderWidth: 1,
+    borderColor: '#0B4A37',
   },
 
-  // Search & Filter
+  /* Scroll Content */
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 40,
+    gap: 16,
+  },
+
+  /* Hero Promo Banner */
+  heroPromoBanner: {
+    backgroundColor: '#C2410C',
+    borderRadius: 20,
+    padding: 16,
+    overflow: 'hidden',
+    position: 'relative',
+    shadowColor: '#C2410C',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  heroGlowCircle: {
+    position: 'absolute',
+    right: -20,
+    bottom: -25,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+  },
+  heroPromoContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  heroPromoLeft: {
+    flex: 1,
+  },
+  heroExclusivePill: {
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
+    paddingHorizontal: 8,
+    paddingVertical: 2.5,
+    borderRadius: 10,
+    alignSelf: 'flex-start',
+    marginBottom: 6,
+  },
+  heroExclusiveText: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: '#FEF08A',
+    letterSpacing: 0.4,
+  },
+  heroPromoTitle: {
+    fontSize: 17,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    letterSpacing: -0.3,
+  },
+  heroPromoDesc: {
+    fontSize: 11,
+    color: '#FFEDD5',
+    marginTop: 2,
+  },
+  heroClaimBtn: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  heroClaimBtnActive: {
+    backgroundColor: '#FEF08A',
+  },
+  heroClaimBtnText: {
+    color: '#C2410C',
+    fontSize: 11.5,
+    fontWeight: '800',
+  },
+  heroClaimBtnTextActive: {
+    color: '#7C2D12',
+  },
+
+  /* Search & Filter Section */
+  searchFilterSection: {
+    gap: 10,
+  },
   searchRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
-    marginBottom: 14,
   },
   searchBox: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     borderRadius: 24,
-    paddingHorizontal: 14,
-    height: 46,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
-    gap: 8,
+    paddingHorizontal: 12,
+    height: 38,
+    gap: 6,
   },
   searchInput: {
     flex: 1,
-    fontSize: 13,
-    color: '#111c2d',
+    fontSize: 11.5,
+    color: '#0F172A',
+    paddingVertical: 0,
   },
-  validFilterBtn: {
+  filterPillBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 14,
-    height: 46,
-    borderRadius: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  validFilterBtnActive: {
-    backgroundColor: '#006b5f',
-  },
-  validFilterText: {
-    color: '#006b5f',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  validFilterTextActive: {
-    color: '#ffffff',
-  },
-
-  // Category Pills
-  categoryScroll: {
-    gap: 8,
-    paddingBottom: 16,
-  },
-  catPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 14,
-    height: 36,
-    borderRadius: 18,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  catPillActive: {
-    backgroundColor: '#b32113',
-    shadowColor: '#b32113',
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  catPillText: {
-    color: '#111c2d',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  catPillTextActive: {
-    color: '#ffffff',
-    fontWeight: '700',
-  },
-
-  // Hero Deal Section
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    marginBottom: 12,
-  },
-  sectionSubtitle: {
-    color: '#006b5f',
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    marginBottom: 2,
-  },
-  sectionTitle: {
-    color: '#111c2d',
-    fontSize: 18,
-    fontWeight: '800',
-  },
-  viewAllBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-    paddingBottom: 2,
-  },
-  viewAllText: {
-    color: '#006b5f',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-
-  heroScroll: {
-    gap: 14,
-    paddingBottom: 18,
-  },
-  heroCard: {
-    width: 290,
-    borderRadius: 20,
-    padding: 16,
-    minHeight: 175,
-    justifyContent: 'space-between',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 5,
-    elevation: 3,
-  },
-  heroCardTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  heroBadge: {
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 12,
-  },
-  heroBadgeText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-  heroCode: {
-    color: 'rgba(255,255,255,0.85)',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  heroCardContent: {
-    marginTop: 8,
-    flex: 1,
-  },
-  heroCardTitle: {
-    color: '#fff',
-    fontSize: 19,
-    fontWeight: '800',
-    marginBottom: 4,
-  },
-  heroCardDesc: {
-    color: 'rgba(255,255,255,0.92)',
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  heroCardBottom: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  getBtn: {
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 16,
-    paddingVertical: 7,
-    borderRadius: 18,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  getBtnText: {
-    color: '#b32113',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  heroDate: {
-    color: 'rgba(255,255,255,0.85)',
-    fontSize: 10,
-    fontWeight: '600',
-  },
-
-  // Wallet Card
-  walletCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
-    marginBottom: 20,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#f0f3ff',
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 12,
+    height: 38,
+    borderRadius: 24,
+    gap: 4,
   },
-  walletHeader: {
+  filterPillBtnActive: {
+    backgroundColor: '#0B4A37',
+    borderColor: '#0B4A37',
+  },
+  filterPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  filterPillTextActive: {
+    color: '#FFFFFF',
+  },
+  categoryChipsScroll: {
+    gap: 8,
+    paddingVertical: 2,
+  },
+  catChip: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+  },
+  catChipActive: {
+    backgroundColor: '#0B4A37',
+    borderColor: '#0B4A37',
+  },
+  catChipText: {
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  catChipTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+  },
+
+  /* User Voucher Wallet & Redeem Box */
+  walletCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    padding: 14,
+    gap: 12,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  walletTopRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    justifyContent: 'space-between',
   },
-  walletHeaderLeft: {
+  walletInfoLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
   },
-  walletIconWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: '#ffdad4',
+  walletIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: '#FFEDD5',
     justifyContent: 'center',
     alignItems: 'center',
   },
   walletTitle: {
-    color: '#111c2d',
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#0F172A',
   },
-  walletSub: {
-    color: '#5b403c',
-    fontSize: 12,
+  walletSubtitle: {
+    fontSize: 11,
+    color: '#64748B',
     marginTop: 1,
   },
+  walletCountHighlight: {
+    color: '#EA580C',
+    fontWeight: '800',
+  },
   walletLink: {
-    color: '#b32113',
     fontSize: 12,
-    fontWeight: '700',
-    textDecorationLine: 'underline',
+    fontWeight: '800',
+    color: '#EA580C',
   },
   walletInputRow: {
     flexDirection: 'row',
-    gap: 8,
-  },
-  walletInputBox: {
-    flex: 1,
-    flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f0f3ff',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    height: 44,
     gap: 8,
   },
   walletInput: {
     flex: 1,
-    fontSize: 12,
-    color: '#111c2d',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 38,
+    fontSize: 11.5,
+    color: '#0F172A',
     fontWeight: '600',
   },
-  applyBtn: {
-    backgroundColor: '#111c2d',
+  applyCodeBtn: {
+    backgroundColor: '#0B4A37',
+    paddingHorizontal: 16,
+    height: 38,
     borderRadius: 12,
-    paddingHorizontal: 18,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  applyBtnText: {
-    color: '#ffffff',
-    fontSize: 13,
-    fontWeight: '700',
+  applyCodeBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
   },
 
-  // Flash Deal Section
-  flashDealHeader: {
+  /* New Customer Highlight Card */
+  newUserBannerCard: {
+    backgroundColor: '#EA580C',
+    borderRadius: 18,
+    padding: 16,
+    shadowColor: '#EA580C',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.22,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  newUserTopRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
-  flashDealHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+  newUserPillBadge: {
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
+    paddingHorizontal: 8,
+    paddingVertical: 2.5,
+    borderRadius: 6,
   },
-  flashDealTitle: {
-    color: '#111c2d',
-    fontSize: 18,
+  newUserPillText: {
+    fontSize: 9.5,
     fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.6,
   },
-  timerBadge: {
+  newUserDataCode: {
+    backgroundColor: 'rgba(0, 0, 0, 0.22)',
+    paddingHorizontal: 8,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+  },
+  newUserDataCodeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    fontFamily: 'monospace',
+    color: '#FFFFFF',
+  },
+  newUserTitle: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#FFFFFF',
+  },
+  newUserDesc: {
+    fontSize: 11.5,
+    color: '#FFEDD5',
+    marginTop: 4,
+    lineHeight: 16,
+  },
+  newUserBottomRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#dee8ff',
-    paddingHorizontal: 10,
+    justifyContent: 'space-between',
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  newUserBtn: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 12,
     paddingVertical: 5,
-    borderRadius: 16,
+    borderRadius: 20,
   },
-  timerText: {
-    color: '#111c2d',
-    fontSize: 11,
+  newUserBtnText: {
+    fontSize: 10.5,
     fontWeight: '800',
+    color: '#C2410C',
+  },
+  newUserHsd: {
+    fontSize: 10,
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontWeight: '600',
+  },
+
+  /* Exclusive Voucher Section */
+  voucherSection: {
+    gap: 12,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+  },
+  sectionSubtitle: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: '#0B4A37',
+    letterSpacing: 0.8,
+  },
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: '#0F172A',
+    marginTop: 1,
+  },
+  sectionSeeAllLink: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0B4A37',
+  },
+
+  /* Empty State */
+  emptyStateBox: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  emptyStateText: {
+    fontSize: 12,
+    color: '#64748B',
+    textAlign: 'center',
+  },
+  emptyResetBtn: {
+    marginTop: 6,
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+  },
+  emptyResetBtnText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#0B4A37',
+  },
+
+  /* Ticket Stub Cards */
+  vouchersListWrap: {
+    gap: 12,
+  },
+  ticketStubContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    flexDirection: 'row',
+    overflow: 'hidden',
+    position: 'relative',
+    shadowColor: '#0B4A37',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  notchLeft: {
+    position: 'absolute',
+    left: 88,
+    top: -8,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    zIndex: 10,
+  },
+  notchRight: {
+    position: 'absolute',
+    left: 88,
+    bottom: -8,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    zIndex: 10,
+  },
+  stubLeft: {
+    width: 96,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 10,
+  },
+  stubTagGiam: {
+    fontSize: 9.5,
+    fontWeight: '900',
     letterSpacing: 0.5,
   },
-
-  // Ticket Voucher Card
-  ticketCard: {
-    flexDirection: 'row',
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  ticketLeftCutout: {
-    position: 'absolute',
-    left: -11,
-    top: '50%',
-    marginTop: -11,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: '#f9f9ff',
-    zIndex: 2,
-  },
-  ticketRightCutout: {
-    position: 'absolute',
-    right: -11,
-    top: '50%',
-    marginTop: -11,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: '#f9f9ff',
-    zIndex: 2,
-  },
-  ticketBadgeWrap: {
-    width: 76,
-    height: 76,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 14,
-    padding: 4,
-  },
-  ticketBadgeText: {
-    fontSize: 10,
-    fontWeight: '800',
-  },
-  ticketBadgeValue: {
+  stubDiscountVal: {
     fontSize: 22,
     fontWeight: '900',
     lineHeight: 26,
-  },
-  ticketBadgeCondition: {
-    color: '#5b403c',
-    fontSize: 9,
-    marginTop: 2,
-  },
-  ticketContent: {
-    flex: 1,
-    justifyContent: 'space-between',
-  },
-  ticketMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
-  },
-  ticketTag: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  ticketTagText: {
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  ticketHsd: {
-    color: '#5b403c',
-    fontSize: 11,
-  },
-  ticketTitle: {
-    color: '#111c2d',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  ticketDesc: {
-    color: '#5b403c',
-    fontSize: 11,
     marginTop: 1,
   },
-  ticketBottomRow: {
+  stubMinSpend: {
+    fontSize: 9,
+    color: '#64748B',
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  dashedDivider: {
+    width: 1,
+    backgroundColor: '#E2E8F0',
+  },
+  stubRight: {
+    flex: 1,
+    padding: 12,
+    paddingLeft: 14,
+    justifyContent: 'space-between',
+  },
+  stubMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  stubCategoryTag: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  stubCategoryTagText: {
+    fontSize: 9.5,
+    fontWeight: '800',
+  },
+  stubHsdRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  stubHsdText: {
+    fontSize: 10,
+    color: '#64748B',
+  },
+  stubHsdUrgent: {
+    color: '#DC2626',
+    fontWeight: '800',
+  },
+  stubDetailsLink: {
+    fontSize: 10,
+    color: '#EA580C',
+    fontWeight: '700',
+    marginLeft: 2,
+  },
+  stubTitle: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  stubDesc: {
+    fontSize: 10.5,
+    color: '#64748B',
+    marginTop: 1,
+  },
+  stubBottomRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginTop: 8,
+    gap: 8,
   },
-  progressWrap: {
+  progressBarWrapper: {
     flex: 1,
-    marginRight: 12,
   },
-  progressBar: {
-    height: 6,
-    backgroundColor: '#dee8ff',
+  progressTrack: {
+    height: 5,
+    backgroundColor: '#F1F5F9',
     borderRadius: 3,
     overflow: 'hidden',
-    marginBottom: 3,
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#b32113',
     borderRadius: 3,
   },
   progressText: {
-    color: '#5b403c',
     fontSize: 9,
-    fontWeight: '600',
+    color: '#64748B',
+    marginTop: 3,
   },
-  saveCodeBtn: {
-    backgroundColor: '#b32113',
-    borderRadius: 18,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+  claimVoucherBtn: {
+    backgroundColor: '#EA580C',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 16,
+    shadowColor: '#EA580C',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  saveCodeBtnActive: {
-    backgroundColor: '#006b5f',
+  claimVoucherBtnSaved: {
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
   },
-  saveCodeBtnText: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  saveCodeBtnTextActive: {
-    color: '#ffffff',
-  },
-
-  // Destination Deals Section
-  destHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    marginTop: 24,
-    marginBottom: 12,
-  },
-  destSubtitle: {
-    color: '#b32113',
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    marginBottom: 2,
-  },
-  destTitle: {
-    color: '#111c2d',
-    fontSize: 18,
+  claimVoucherBtnText: {
+    color: '#FFFFFF',
+    fontSize: 10.5,
     fontWeight: '800',
   },
-  destLinkText: {
-    color: '#b32113',
-    fontSize: 12,
-    fontWeight: '700',
+  claimVoucherBtnTextSaved: {
+    color: '#059669',
+  },
+
+  /* Destination Deals Grid */
+  destDealsSection: {
+    gap: 12,
+    paddingTop: 4,
   },
   destGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
-    marginBottom: 20,
   },
-  productCard: {
+  dealCard: {
     width: '48%',
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
     elevation: 2,
   },
-  productImageWrap: {
-    width: '100%',
-    height: 120,
+  dealImageContainer: {
+    height: 105,
     position: 'relative',
-    backgroundColor: '#dee8ff',
+    backgroundColor: '#E2E8F0',
   },
-  productImage: {
+  dealImage: {
     width: '100%',
     height: '100%',
   },
-  productBadgeWrap: {
+  dealDarkOverlay: {
+    ...(StyleSheet.absoluteFill as any),
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+  },
+  dealBadgeTop: {
     position: 'absolute',
     top: 8,
     left: 8,
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+    zIndex: 10,
   },
-  productBadge: {
-    color: '#ffffff',
+  dealBadgeTopText: {
+    color: '#FFFFFF',
     fontSize: 9,
-    fontWeight: '700',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    overflow: 'hidden',
+    fontWeight: '800',
   },
-  productBody: {
+  dealCardBody: {
     padding: 10,
-    flex: 1,
     justifyContent: 'space-between',
+    minHeight: 95,
   },
-  productName: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#111c2d',
-    lineHeight: 17,
+  dealTitle: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: '#0F172A',
+    lineHeight: 15,
   },
-  productSub: {
+  dealSub: {
     fontSize: 10,
-    color: '#5b403c',
+    color: '#64748B',
     marginTop: 2,
   },
-  productPriceRow: {
-    marginTop: 10,
+  dealPriceContainer: {
+    marginTop: 6,
   },
-  oldPriceWrap: {
+  dealOldPriceRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   },
-  oldPrice: {
-    fontSize: 10,
-    color: '#8f706b',
+  dealOldPrice: {
+    fontSize: 9.5,
+    color: '#94A3B8',
     textDecorationLine: 'line-through',
   },
-  discountBadge: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#b32113',
+  dealDiscountPill: {
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 4,
   },
-  finalPriceWrap: {
+  dealDiscountText: {
+    fontSize: 8.5,
+    color: '#DC2626',
+    fontWeight: '800',
+  },
+  dealCurrentPriceRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    gap: 3,
     marginTop: 1,
   },
-  pricePrefix: {
-    fontSize: 10,
-    color: '#5b403c',
+  dealPricePrefix: {
+    fontSize: 9.5,
+    color: '#64748B',
   },
-  finalPrice: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#b32113',
+  dealPriceVal: {
+    fontSize: 12.5,
+    fontWeight: '900',
+    color: '#EA580C',
   },
 
-  // Tips Card
-  tipsCard: {
-    flexDirection: 'row',
-    backgroundColor: '#dee8ff',
+  /* Trust Banner */
+  trustBanner: {
+    backgroundColor: '#ECFDF5',
     borderRadius: 16,
-    padding: 14,
-    gap: 12,
-    alignItems: 'flex-start',
-    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
   },
-  tipIconWrap: {
+  trustLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  trustIconBox: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#0B4A37',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  tipTitle: {
-    color: '#111c2d',
-    fontSize: 13,
-    fontWeight: '700',
+  trustTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#0B4A37',
   },
-  tipText: {
-    color: '#5b403c',
-    fontSize: 12,
-    lineHeight: 18,
+  trustSubtitle: {
+    fontSize: 9.5,
+    color: '#64748B',
+    marginTop: 1,
+  },
+  trustActionText: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: '#0B4A37',
+    textDecorationLine: 'underline',
+  },
+
+  /* Modal Details */
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalSheetContainer: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    paddingBottom: 32,
+    gap: 14,
+  },
+  modalHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  modalHeaderTitleCol: {
+    flex: 1,
+  },
+  modalVoucherCode: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#EA580C',
+    letterSpacing: 0.8,
+  },
+  modalVoucherTitle: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#0F172A',
     marginTop: 2,
+  },
+  modalCloseBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F1F5F9',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalDiscountBox: {
+    backgroundColor: '#FFF7ED',
+    borderWidth: 1,
+    borderColor: '#FED7AA',
+    borderRadius: 14,
+    padding: 12,
+    alignItems: 'center',
+  },
+  modalDiscountLabel: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: '#C2410C',
+    letterSpacing: 0.5,
+  },
+  modalDiscountValue: {
+    fontSize: 26,
+    fontWeight: '900',
+    color: '#EA580C',
+    marginVertical: 2,
+  },
+  modalMinSpendText: {
+    fontSize: 11,
+    color: '#64748B',
+  },
+  modalSectionTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  modalTermsList: {
+    gap: 6,
+  },
+  modalTermRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+  },
+  modalTermBullet: {
+    fontSize: 14,
+    color: '#0B4A37',
+    lineHeight: 18,
+  },
+  modalTermText: {
+    flex: 1,
+    fontSize: 11.5,
+    color: '#475569',
+    lineHeight: 17,
+  },
+  modalActionsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 6,
+  },
+  modalCopyBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    paddingVertical: 12,
+    borderRadius: 14,
+    gap: 6,
+  },
+  modalCopyBtnText: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#0B4A37',
+  },
+  modalUseNowBtn: {
+    flex: 1,
+    backgroundColor: '#0B4A37',
+    paddingVertical: 12,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalUseNowBtnText: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
 });

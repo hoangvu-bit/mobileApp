@@ -38,7 +38,7 @@ export default function RootLayout() {
           <Stack.Screen name="chi-tiet-dia-diem" />
           <Stack.Screen name="cam-nang" />
           <Stack.Screen name="chi-tiet-bai-viet" />
-          <Stack.Screen name="uu-dai" />
+          <Stack.Screen name="uu-dai" options={{ headerShown: false }} />
           <Stack.Screen name="don-hang-ve" />
           <Stack.Screen name="yeu-thich" />
           <Stack.Screen name="tai-khoan" />
