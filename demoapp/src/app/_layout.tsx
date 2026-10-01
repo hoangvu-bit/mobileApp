@@ -17,8 +17,8 @@ export default function RootLayout() {
       <View style={{ flex: 1 }}>
         <Stack screenOptions={{ header: () => <GlobalHeader />, headerShown: true }}>
           <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="tour" />
-          <Stack.Screen name="chi-tiet-tour" />
+          <Stack.Screen name="tour" options={{ headerShown: false }} />
+          <Stack.Screen name="chi-tiet-tour" options={{ headerShown: false }} />
           <Stack.Screen name="tour-da-lat" />
           <Stack.Screen name="tour-vung-tau" />
           <Stack.Screen name="tour-phu-quoc" />
@@ -27,11 +27,12 @@ export default function RootLayout() {
           <Stack.Screen name="tour-tay-ninh" />
           <Stack.Screen name="tour-ninh-binh" />
           <Stack.Screen name="ve-du-lich" options={{ headerShown: false }} />
-          <Stack.Screen name="luu-tru" />
-          <Stack.Screen name="khu-sinh-thai" />
-          <Stack.Screen name="chi-tiet-khu-sinh-thai" />
-          <Stack.Screen name="am-thuc" />
-          <Stack.Screen name="chi-tiet-am-thuc" />
+          <Stack.Screen name="luu-tru" options={{ headerShown: false }} />
+          <Stack.Screen name="chi-tiet-khach-san" options={{ headerShown: false }} />
+          <Stack.Screen name="khu-sinh-thai" options={{ headerShown: false }} />
+          <Stack.Screen name="chi-tiet-khu-sinh-thai" options={{ headerShown: false }} />
+          <Stack.Screen name="am-thuc" options={{ headerShown: false }} />
+          <Stack.Screen name="chi-tiet-am-thuc" options={{ headerShown: false }} />
           <Stack.Screen name="diem-di-tich" />
           <Stack.Screen name="chi-tiet-diem-di-tich" />
           <Stack.Screen name="ban-do-so" />
