@@ -1,4 +1,3 @@
-import GlobalFooter from '../components/global-footer';
 import React, { useState } from 'react';
 import { SymbolView } from 'expo-symbols';
 import { Image } from 'expo-image';
@@ -115,8 +114,6 @@ export default function CamNangScreen() {
             ))}
           </View>
         </View>
-
-        <GlobalFooter />
       </ScrollView>
     </View>
   );

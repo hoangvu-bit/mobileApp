@@ -1,4 +1,3 @@
-import GlobalFooter from '../components/global-footer';
 import React from 'react';
 import { SymbolView } from 'expo-symbols';
 import { Image } from 'expo-image';
@@ -97,7 +96,6 @@ export default function ChiTietDiemDiTichScreen() {
             <Text style={styles.guidelineText}>⬢ Giữ trật tự, không chụp ảnh quay phim hướng trực tiếp vào lúc đang hành lễ nghiêm trang.</Text>
           </View>
         </View>
-        <GlobalFooter />
       </ScrollView>
 
       {/* Bottom Sticky Action Bar */}

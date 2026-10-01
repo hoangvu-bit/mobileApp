@@ -1,4 +1,3 @@
-import GlobalFooter from '../components/global-footer';
 import React, { useState, useMemo } from 'react';
 import { SymbolView } from 'expo-symbols';
 import { Image } from 'expo-image';
@@ -424,8 +423,6 @@ export default function ChiTietVeScreen() {
             </View>
           </View>
         </View>
-        
-        <GlobalFooter />
       </ScrollView>
     </View>
   );

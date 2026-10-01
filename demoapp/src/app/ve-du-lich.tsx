@@ -1,4 +1,3 @@
-import GlobalFooter from '../components/global-footer';
 import React, { useState, useEffect, useRef } from 'react';
 import { SymbolView } from 'expo-symbols';
 import { Image } from 'expo-image';
@@ -213,8 +212,6 @@ export default function VeDuLichScreen() {
             ))}
           </View>
         </View>
-
-        <GlobalFooter />
       </ScrollView>
     </View>
   );
@@ -382,7 +379,7 @@ const styles = StyleSheet.create({
   ticketImageContainer: { height: 200, width: '100%', position: 'relative' },
   ticketImage: { width: '100%', height: '100%' },
   ticketImageOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.2)',
   },
   ticketBadge: { position: 'absolute', top: 12, left: 12, backgroundColor: 'rgba(255,255,255,0.94)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 },

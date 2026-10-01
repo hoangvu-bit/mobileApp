@@ -2,8 +2,7 @@ import { SymbolView } from 'expo-symbols';
 import { Image } from 'expo-image';
 import { ScrollView, StyleSheet, Text, TextInput, View, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
-// import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import GlobalFooter from '../components/global-footer';
+
 
 export default function HomeScreen() {
   // const insets = useSafeAreaInsets();
@@ -122,8 +121,6 @@ export default function HomeScreen() {
             ))}
           </ScrollView>
         </View>
-
-        <GlobalFooter />
       </ScrollView>
     </View>
   );

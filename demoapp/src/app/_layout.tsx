@@ -25,7 +25,9 @@ export default function RootLayout() {
         <Stack.Screen name="tour-tay-ninh" />
         <Stack.Screen name="tour-ninh-binh" />
         <Stack.Screen name="ve-du-lich" />
+        <Stack.Screen name="chi-tiet-ve" />
         <Stack.Screen name="luu-tru" />
+        <Stack.Screen name="chi-tiet-khach-san" />
         <Stack.Screen name="khu-sinh-thai" />
         <Stack.Screen name="chi-tiet-khu-sinh-thai" />
         <Stack.Screen name="am-thuc" />

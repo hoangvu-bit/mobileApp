@@ -1,4 +1,3 @@
-import GlobalFooter from '../components/global-footer';
 import React from 'react';
 import { SymbolView } from 'expo-symbols';
 import { Image } from 'expo-image';
@@ -116,7 +115,6 @@ export default function TourTayNinhScreen() {
             </View>
           </View>
         </View>
-        <GlobalFooter />
       </ScrollView>
 
       {/* Bottom Sticky Action Bar */}

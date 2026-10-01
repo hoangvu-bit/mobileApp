@@ -1,4 +1,3 @@
-import GlobalFooter from '../components/global-footer';
 import React from 'react';
 import { SymbolView } from 'expo-symbols';
 import { Image } from 'expo-image';
@@ -120,7 +119,6 @@ export default function TourDaLatScreen() {
             </View>
           </View>
         </View>
-        <GlobalFooter />
       </ScrollView>
 
       {/* Bottom Sticky Action Bar */}
