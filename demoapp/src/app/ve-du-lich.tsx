@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { SymbolView } from 'expo-symbols';
 import { Image } from 'expo-image';
 import {
@@ -107,6 +107,56 @@ export default function VeDuLichScreen() {
     return matchTag && matchKeyword;
   });
 
+  // Pagination for Tickets List
+  const ITEMS_PER_PAGE = 4;
+  const [currentPage, setCurrentPage] = useState(1);
+  const ticketsSectionYRef = useRef(750);
+  const pageNumbersScrollRef = useRef<ScrollView>(null);
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+
+  const totalPages = Math.max(1, Math.ceil(filteredTickets.length / ITEMS_PER_PAGE));
+  const safeCurrentPage = Math.max(1, Math.min(currentPage, totalPages));
+
+  useEffect(() => {
+    // Auto-scroll pagination number strip to keep active page centered
+    const targetX = Math.max(0, (safeCurrentPage - 2) * 40);
+    pageNumbersScrollRef.current?.scrollTo({ x: targetX, animated: true });
+  }, [safeCurrentPage]);
+
+  const handlePageChange = (page: number) => {
+    if (page < 1 || page > totalPages || page === safeCurrentPage) return;
+    setCurrentPage(page);
+    mainScrollRef.current?.scrollTo({
+      y: Math.max(0, ticketsSectionYRef.current - 14),
+      animated: true,
+    });
+  };
+
+  const handleTouchStart = (e: any) => {
+    touchStartX.current = e.nativeEvent.pageX;
+    touchStartY.current = e.nativeEvent.pageY;
+  };
+
+  const handleTouchEnd = (e: any) => {
+    const dx = e.nativeEvent.pageX - touchStartX.current;
+    const dy = e.nativeEvent.pageY - touchStartY.current;
+    if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      if (dx < 0 && safeCurrentPage < totalPages) {
+        // Swiped left -> Next page
+        handlePageChange(safeCurrentPage + 1);
+      } else if (dx > 0 && safeCurrentPage > 1) {
+        // Swiped right -> Previous page
+        handlePageChange(safeCurrentPage - 1);
+      }
+    }
+  };
+
+  const paginatedTickets = useMemo(() => {
+    const startIndex = (safeCurrentPage - 1) * ITEMS_PER_PAGE;
+    return filteredTickets.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredTickets, safeCurrentPage]);
+
   const CITY_FILTERS = [
     'Tất cả',
     'Tây Ninh',
@@ -201,6 +251,7 @@ export default function VeDuLichScreen() {
                 onPress={() => {
                   setSearchKeyword('');
                   setAppliedKeyword('');
+                  setCurrentPage(1);
                 }}
                 hitSlop={8}
                 style={{ marginRight: 6 }}
@@ -214,6 +265,7 @@ export default function VeDuLichScreen() {
               onPress={() => {
                 setAppliedKeyword(searchKeyword);
                 setShowSuggestions(false);
+                setCurrentPage(1);
               }}
             >
               <Text style={styles.searchActionBtnText}>Tìm vé</Text>
@@ -231,6 +283,7 @@ export default function VeDuLichScreen() {
                     setSearchKeyword(t.name);
                     setAppliedKeyword(t.name);
                     setShowSuggestions(false);
+                    setCurrentPage(1);
                   }}
                 >
                   <SymbolView name="ticket" size={14} tintColor="#0B4A37" />
@@ -393,6 +446,7 @@ export default function VeDuLichScreen() {
                     setSelectedTag(city);
                     setAppliedKeyword('');
                     setSearchKeyword('');
+                    setCurrentPage(1);
                   }}
                 >
                   <Text style={[styles.cityChipText, isActive && styles.cityChipTextActive]}>
@@ -447,7 +501,12 @@ export default function VeDuLichScreen() {
         </View>
 
         {/* BEGIN: All Tickets List (Horizontal Card Style - Traveloka/Klook Standard) */}
-        <View style={styles.ticketsListSection}>
+        <View
+          style={styles.ticketsListSection}
+          onLayout={(e) => {
+            ticketsSectionYRef.current = e.nativeEvent.layout.y;
+          }}
+        >
           <View style={styles.listHeaderRow}>
             <View>
               <Text style={styles.listSubTitle}>GỢI Ý NỔI BẬT</Text>
@@ -472,71 +531,194 @@ export default function VeDuLichScreen() {
                   setSelectedTag('Tất cả');
                   setAppliedKeyword('');
                   setSearchKeyword('');
+                  setCurrentPage(1);
                 }}
               >
                 <Text style={styles.resetFilterBtnText}>Xem tất cả vé</Text>
               </Pressable>
             </View>
           ) : (
-            <View style={styles.horizontalCardGrid}>
-              {filteredTickets.map((ticket, idx) => (
-                <Pressable
-                  key={idx}
-                  style={styles.horizontalTicketCard}
-                  onPress={() => handleBookTicket(ticket)}
-                >
-                  {/* Left Square Thumbnail */}
-                  <View style={styles.ticketThumbBox}>
-                    <Image source={{ uri: ticket.image }} style={styles.ticketThumbImg} contentFit="cover" />
-                    <View style={styles.thumbRatingPill}>
-                      <Text style={styles.thumbStar}>★</Text>
-                      <Text style={styles.thumbRatingVal}>4.9</Text>
-                    </View>
-                    <View style={styles.thumbCategoryBadge}>
-                      <Text style={styles.thumbCategoryText}>Vé du lịch</Text>
-                    </View>
-                  </View>
-
-                  {/* Right Content Column */}
-                  <View style={styles.ticketRightCol}>
-                    <View>
-                      <Text style={styles.ticketCardTitle} numberOfLines={2}>
-                        {ticket.name}
-                      </Text>
-
-                      <View style={styles.ticketCardLocRow}>
-                        <SymbolView name="mappin" size={11} tintColor="#0B4A37" />
-                        <Text style={styles.ticketCardLocText} numberOfLines={1}>
-                          {ticket.location}
-                        </Text>
+            <>
+              <View
+                style={styles.horizontalCardGrid}
+                onTouchStart={handleTouchStart}
+                onTouchEnd={handleTouchEnd}
+              >
+                {paginatedTickets.map((ticket, idx) => (
+                  <Pressable
+                    key={idx}
+                    style={styles.horizontalTicketCard}
+                    onPress={() => handleBookTicket(ticket)}
+                  >
+                    {/* Left Square Thumbnail */}
+                    <View style={styles.ticketThumbBox}>
+                      <Image source={{ uri: ticket.image }} style={styles.ticketThumbImg} contentFit="cover" />
+                      <View style={styles.thumbRatingPill}>
+                        <Text style={styles.thumbStar}>★</Text>
+                        <Text style={styles.thumbRatingVal}>4.9</Text>
                       </View>
-
-                      <View style={styles.ticketCardPerksRow}>
-                        <View style={styles.perkChip}>
-                          <Text style={styles.perkChipText}>Có lịch gần nhất</Text>
-                        </View>
-                        <View style={styles.liveAvailRow}>
-                          <View style={styles.liveAvailDot} />
-                          <Text style={styles.liveAvailText}>3 lịch khả dụng</Text>
-                        </View>
+                      <View style={styles.thumbCategoryBadge}>
+                        <Text style={styles.thumbCategoryText}>Vé du lịch</Text>
                       </View>
                     </View>
 
-                    {/* Bottom Price & Button */}
-                    <View style={styles.ticketCardBottomRow}>
+                    {/* Right Content Column */}
+                    <View style={styles.ticketRightCol}>
                       <View>
-                        <Text style={styles.pricePrefix}>Giá từ</Text>
-                        <Text style={styles.priceVal}>{ticket.price}</Text>
+                        <Text style={styles.ticketCardTitle} numberOfLines={2}>
+                          {ticket.name}
+                        </Text>
+
+                        <View style={styles.ticketCardLocRow}>
+                          <SymbolView name="mappin" size={11} tintColor="#0B4A37" />
+                          <Text style={styles.ticketCardLocText} numberOfLines={1}>
+                            {ticket.location}
+                          </Text>
+                        </View>
+
+                        <View style={styles.ticketCardPerksRow}>
+                          <View style={styles.perkChip}>
+                            <Text style={styles.perkChipText}>Có lịch gần nhất</Text>
+                          </View>
+                          <View style={styles.liveAvailRow}>
+                            <View style={styles.liveAvailDot} />
+                            <Text style={styles.liveAvailText}>3 lịch khả dụng</Text>
+                          </View>
+                        </View>
                       </View>
 
-                      <View style={styles.bookTicketBtn}>
-                        <Text style={styles.bookTicketBtnText}>Đặt vé</Text>
+                      {/* Bottom Price & Button */}
+                      <View style={styles.ticketCardBottomRow}>
+                        <View>
+                          <Text style={styles.pricePrefix}>Giá từ</Text>
+                          <Text style={styles.priceVal}>{ticket.price}</Text>
+                        </View>
+
+                        <View style={styles.bookTicketBtn}>
+                          <Text style={styles.bookTicketBtnText}>Đặt vé</Text>
+                        </View>
                       </View>
                     </View>
+                  </Pressable>
+                ))}
+              </View>
+
+              {/* Numbered Pagination Controls */}
+              {filteredTickets.length > ITEMS_PER_PAGE && (
+                <View style={styles.paginationCard}>
+                  {/* Summary row */}
+                  <View style={styles.paginationSummaryRow}>
+                    <Text style={styles.paginationSummaryText}>
+                      Hiển thị{' '}
+                      <Text style={styles.paginationSummaryBold}>
+                        {(safeCurrentPage - 1) * ITEMS_PER_PAGE + 1} -{' '}
+                        {Math.min(safeCurrentPage * ITEMS_PER_PAGE, filteredTickets.length)}
+                      </Text>{' '}
+                      trong{' '}
+                      <Text style={styles.paginationSummaryBold}>{filteredTickets.length}</Text> vé
+                    </Text>
+                    <View style={styles.pageIndicatorPill}>
+                      <Text style={styles.pageIndicatorText}>
+                        Trang {safeCurrentPage}/{totalPages}
+                      </Text>
+                    </View>
                   </View>
-                </Pressable>
-              ))}
-            </View>
+
+                  {/* Buttons row */}
+                  <View style={styles.paginationButtonsRow}>
+                    {/* Previous Button */}
+                    <Pressable
+                      style={[
+                        styles.pageNavBtn,
+                        safeCurrentPage === 1 && styles.pageNavBtnDisabled,
+                      ]}
+                      onPress={() => handlePageChange(safeCurrentPage - 1)}
+                      disabled={safeCurrentPage === 1}
+                      hitSlop={6}
+                      accessibilityLabel="Trang trước"
+                    >
+                      <SymbolView
+                        name="chevron.left"
+                        size={12}
+                        tintColor={safeCurrentPage === 1 ? '#94A3B8' : '#0B4A37'}
+                      />
+                      <Text
+                        style={[
+                          styles.pageNavBtnText,
+                          safeCurrentPage === 1 && styles.pageNavBtnTextDisabled,
+                        ]}
+                      >
+                        Trước
+                      </Text>
+                    </Pressable>
+
+                    {/* Page Numbers (Horizontal Scrollable Strip) */}
+                    <View style={styles.pageNumbersScrollContainer}>
+                      <ScrollView
+                        ref={pageNumbersScrollRef}
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={[
+                          styles.pageNumbersScrollContent,
+                          totalPages <= 4 && { justifyContent: 'center', flexGrow: 1 },
+                        ]}
+                      >
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => {
+                          const isCurrent = pageNum === safeCurrentPage;
+                          return (
+                            <Pressable
+                              key={pageNum}
+                              style={[
+                                styles.pageNumBtn,
+                                isCurrent && styles.pageNumBtnActive,
+                              ]}
+                              onPress={() => handlePageChange(pageNum)}
+                              hitSlop={4}
+                              accessibilityLabel={`Trang ${pageNum}`}
+                            >
+                              <Text
+                                style={[
+                                  styles.pageNumText,
+                                  isCurrent && styles.pageNumTextActive,
+                                ]}
+                              >
+                                {pageNum}
+                              </Text>
+                            </Pressable>
+                          );
+                        })}
+                      </ScrollView>
+                    </View>
+
+                    {/* Next Button */}
+                    <Pressable
+                      style={[
+                        styles.pageNavBtn,
+                        safeCurrentPage === totalPages && styles.pageNavBtnDisabled,
+                      ]}
+                      onPress={() => handlePageChange(safeCurrentPage + 1)}
+                      disabled={safeCurrentPage === totalPages}
+                      hitSlop={6}
+                      accessibilityLabel="Trang sau"
+                    >
+                      <Text
+                        style={[
+                          styles.pageNavBtnText,
+                          safeCurrentPage === totalPages && styles.pageNavBtnTextDisabled,
+                        ]}
+                      >
+                        Sau
+                      </Text>
+                      <SymbolView
+                        name="chevron.right"
+                        size={12}
+                        tintColor={safeCurrentPage === totalPages ? '#94A3B8' : '#0B4A37'}
+                      />
+                    </Pressable>
+                  </View>
+                </View>
+              )}
+            </>
           )}
         </View>
 
@@ -1666,6 +1848,120 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '700',
     fontSize: 12,
+  },
+
+  /* Pagination Styles */
+  paginationCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    padding: 14,
+    marginTop: 16,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  paginationSummaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    marginBottom: 12,
+  },
+  paginationSummaryText: {
+    fontSize: 11.5,
+    color: '#64748B',
+  },
+  paginationSummaryBold: {
+    color: '#0B4A37',
+    fontWeight: '800',
+  },
+  pageIndicatorPill: {
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  pageIndicatorText: {
+    color: '#047857',
+    fontSize: 10.5,
+    fontWeight: '800',
+  },
+  paginationButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  pageNavBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    paddingHorizontal: 10,
+    height: 34,
+    borderRadius: 10,
+    gap: 3,
+  },
+  pageNavBtnDisabled: {
+    backgroundColor: '#F8FAFC',
+    borderColor: '#E2E8F0',
+    opacity: 0.45,
+  },
+  pageNavBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#0B4A37',
+  },
+  pageNavBtnTextDisabled: {
+    color: '#94A3B8',
+  },
+  pageNumbersScrollContainer: {
+    flex: 1,
+    height: 38,
+    marginHorizontal: 4,
+    justifyContent: 'center',
+  },
+  pageNumbersScrollContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 2,
+  },
+  pageNumBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pageNumBtnActive: {
+    backgroundColor: '#0B4A37',
+    borderColor: '#0B4A37',
+    shadowColor: '#0B4A37',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  pageNumText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#334155',
+  },
+  pageNumTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '900',
   },
 
   /* ========================================================================= */
