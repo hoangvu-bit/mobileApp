@@ -612,7 +612,7 @@ export default function UuDaiDetailScreen() {
             <View style={styles.stepNumberBadge}><Text style={styles.stepNumberText}>1</Text></View>
             <View style={styles.stepContent}>
               <Text style={styles.stepTitle}>Chọn dịch vụ hoặc vé cần mua</Text>
-              <Text style={styles.stepDesc}>Nhấn nút "Dùng ngay" bên dưới hoặc chọn vé tham quan phù hợp trong danh mục.</Text>
+              <Text style={styles.stepDesc}>Nhấn nút &apos;Dùng ngay&apos; bên dưới hoặc chọn vé tham quan phù hợp trong danh mục.</Text>
             </View>
           </View>
           <View style={styles.stepItem}>

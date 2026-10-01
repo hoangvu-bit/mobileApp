@@ -1,4 +1,3 @@
-import GlobalFooter from '../components/global-footer';
 import React, { useState, useMemo } from 'react';
 import { SymbolView } from 'expo-symbols';
 import { Image } from 'expo-image';
@@ -142,7 +141,8 @@ export default function ChiTietVeScreen() {
     if (vCode) {
       const match = AVAILABLE_VOUCHERS.find(v => v.code === vCode);
       if (match) {
-        setSelectedVoucher(match);
+        const timer = setTimeout(() => setSelectedVoucher(match), 50);
+        return () => clearTimeout(timer);
       }
     }
   }, [params]);

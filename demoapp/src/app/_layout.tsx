@@ -16,7 +16,7 @@ export default function RootLayout() {
       <AnimatedSplashOverlay />
       <View style={{ flex: 1 }}>
         <Stack screenOptions={{ header: () => <GlobalHeader />, headerShown: true }}>
-          <Stack.Screen name="index" />
+          <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="tour" />
           <Stack.Screen name="chi-tiet-tour" />
           <Stack.Screen name="tour-da-lat" />
@@ -26,7 +26,7 @@ export default function RootLayout() {
           <Stack.Screen name="tour-ha-long" />
           <Stack.Screen name="tour-tay-ninh" />
           <Stack.Screen name="tour-ninh-binh" />
-          <Stack.Screen name="ve-du-lich" />
+          <Stack.Screen name="ve-du-lich" options={{ headerShown: false }} />
           <Stack.Screen name="luu-tru" />
           <Stack.Screen name="khu-sinh-thai" />
           <Stack.Screen name="chi-tiet-khu-sinh-thai" />

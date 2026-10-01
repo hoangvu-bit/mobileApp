@@ -635,7 +635,7 @@ export default function UuDaiScreen() {
           <View style={{ flex: 1 }}>
             <Text style={styles.tipTitle}>Mẹo săn mã cùng iGovi</Text>
             <Text style={styles.tipText}>
-              Nhấn <Text style={{ fontWeight: '700', color: '#111c2d' }}>"Lưu mã"</Text> để tự động áp dụng tại bước thanh toán. Mỗi đơn hàng có thể kết hợp mã giảm giá iGovi cùng ưu đãi thanh toán ví điện tử!
+              Nhấn <Text style={{ fontWeight: '700', color: '#111c2d' }}>&apos;Lưu mã&apos;</Text> để tự động áp dụng tại bước thanh toán. Mỗi đơn hàng có thể kết hợp mã giảm giá iGovi cùng ưu đãi thanh toán ví điện tử!
             </Text>
           </View>
         </View>
