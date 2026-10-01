@@ -85,7 +85,7 @@ export default function LuuTruScreen() {
   const [appliedQuery, setAppliedQuery] = useState('');
   const [selectedProvince, setSelectedProvince] = useState('Tất cả');
   const [onlyDiscount, setOnlyDiscount] = useState(false);
-  
+
   // Search Suggestions State
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
@@ -285,7 +285,7 @@ export default function LuuTruScreen() {
 
       {/* BEGIN: Top Dark Emerald Header (Matching Stitch Screen) */}
       <View style={[styles.headerContainer, { paddingTop: Math.max(insets.top, 16) }]}>
-        
+
         {/* Action Bar */}
         <View style={styles.topActionBar}>
           <View style={styles.headerLeft}>
@@ -377,10 +377,10 @@ export default function LuuTruScreen() {
                   onPress={() => handleSelectSuggestion(item)}
                 >
                   <View style={[styles.suggestionIconBox, item.isHotel && { backgroundColor: '#e6f7f2' }]}>
-                    <Ionicons 
-                      name={item.isHotel ? "bed" : "location-sharp"} 
-                      size={14} 
-                      color={item.isHotel ? "#008b74" : "#0a382a"} 
+                    <Ionicons
+                      name={item.isHotel ? "bed" : "location-sharp"}
+                      size={14}
+                      color={item.isHotel ? "#008b74" : "#0a382a"}
                     />
                   </View>
                   <View style={{ flex: 1, marginLeft: 10 }}>
@@ -403,7 +403,7 @@ export default function LuuTruScreen() {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        
+
         {/* Quick Filter Horizontal Scroll Categories */}
         <View style={styles.categorySection}>
           <ScrollView
@@ -434,7 +434,7 @@ export default function LuuTruScreen() {
 
         {/* Hotel Listings Section (Horizontal Stitch Dark Emerald Cards) */}
         <View style={styles.listSection}>
-          
+
           {/* Section Header */}
           <View style={styles.sectionHeader}>
             <View style={{ flex: 1 }}>
@@ -443,8 +443,8 @@ export default function LuuTruScreen() {
                 {activeQuery
                   ? `Kết quả cho "${activeQuery}"`
                   : selectedProvince !== 'Tất cả'
-                  ? `Khách sạn tại ${selectedProvince}`
-                  : 'Chỗ nghỉ giá tốt nhất hôm nay'}
+                    ? `Khách sạn tại ${selectedProvince}`
+                    : 'Chỗ nghỉ giá tốt nhất hôm nay'}
               </Text>
             </View>
             <View style={styles.hotelCountBadge}>
@@ -505,7 +505,7 @@ export default function LuuTruScreen() {
                         <Text style={styles.cardHotelName} numberOfLines={1}>
                           {hotel.name}
                         </Text>
-                        
+
                         <View style={styles.cardLocationRow}>
                           <Ionicons name="location-sharp" size={13} color="#059669" />
                           <Text style={styles.cardLocationText} numberOfLines={1}>
@@ -1387,6 +1387,7 @@ const styles = StyleSheet.create({
   },
   cardTypeTag: {
     position: 'absolute',
+
     bottom: 6,
     left: 6,
     backgroundColor: 'rgba(10, 56, 42, 0.92)',
