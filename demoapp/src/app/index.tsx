@@ -15,14 +15,198 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import GlobalFooter from '../components/global-footer';
 
+const removeVietnameseTones = (str: string) => {
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toLowerCase()
+    .trim();
+};
+
+const TRENDING_SEARCH_TAGS = [
+  'Núi Bà Đen',
+  'Cáp treo',
+  'Buffet Vân Sơn',
+  'Phú Quốc',
+  'Đà Nẵng',
+  'Nha Trang',
+  'Khách sạn',
+];
+
+const ALL_SEARCH_ITEMS = [
+  {
+    id: 's1',
+    name: 'Vé cáp treo Chùa Hang Núi Bà Đen',
+    category: 'Vé du lịch',
+    badgeType: 'ticket',
+    location: 'TP. Tây Ninh, Tây Ninh',
+    price: '245.000đ',
+    image:
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuAqVXZ8F0ZEGdzLQ7AZKFoFE134YhpBxkEVB2onrC8asFTuDxYPrXytUCqb2YvMVJFKPBL4H3zkLfSV6FlUybL1y0UKbTdJD1s-GXBfC6dPxxoLBZ1-4DomPtKOoPuFO_T3FqSEGufm3mWUBaUdK7r02mibbb24yESeClIn4TFJSpWd0Z22fw9HqLDENx-DphzFeAFSYL7Div2L5XDQLybUdEylUnqZmfS0nClJmLngW-D4OwthDD0azQ',
+    desc: 'Tuyến cáp treo Chùa Hang dẫn thẳng đến quần thể Chùa Bà hơn 300 năm tuổi, thuận tiện cho hành hương lễ Phật.',
+  },
+  {
+    id: 's2',
+    name: 'Vé cáp treo Đỉnh Vân Sơn khứ hồi',
+    category: 'Vé du lịch',
+    badgeType: 'ticket',
+    location: 'TP. Tây Ninh, Tây Ninh',
+    price: '400.000đ',
+    image: 'https://eholiday.vn/wp-content/uploads/2024/09/dinh-van-son-nui-ba-den-tay-ninh.jpg',
+    desc: 'Cáp treo khứ hồi chinh phục "Nóc nhà Nam Bộ" ở độ cao 986m, chiêm bái tượng Phật Bà Tây Bổ Đà Sơn.',
+  },
+  {
+    id: 's3',
+    name: 'Buffet trưa Vân Sơn Núi Bà Đen',
+    category: 'Ẩm thực & Buffet',
+    badgeType: 'ticket',
+    location: 'TP. Tây Ninh, Tây Ninh',
+    price: '250.000đ',
+    image:
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuDCTuj_eUkEwd2SlqCUgxyQa3RPi8VS00IOFXzVrHMzp_xJhdonkEZZoF6vOB4fTrrSmqSXs580PWJ6WHmqvfGId42KF5rnUENfsNYAbczEWU7YN8EsAOrTZaaun9DBScKQr-QOWBP6mXBpsFMl-BWIsfGAJ_r84Bu1tderCiRG_rcV0KBB3nY7hg-hsdPMocz8IE2Ym70ygz4_FLrYHr6IyYq8nWyekvq-I5HYg3nvIBmMwHEmA_m8dQ',
+    desc: 'Vé buffet trưa tại nhà hàng Vân Sơn Đỉnh Núi Bà Đen với hơn 80 món ăn phong phú từ đặc sản Tây Ninh đến ẩm thực Á Âu.',
+  },
+  {
+    id: 's4',
+    name: 'Combo Núi Bà Đen: Cáp treo Đỉnh Vân Sơn + buffet trưa',
+    category: 'Combo Ưu đãi',
+    badgeType: 'ticket',
+    location: 'TP. Tây Ninh, Tây Ninh',
+    price: '550.000đ',
+    image:
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuDH4fTUQo5xCGQnA0SJyxZEENYH6Zfq1QiEPxJRAcpBM_wUQPqPLtLyh_dgOqX3SR2wom1yqZNsDl3KYPvlMAnQoZi3nyvBpejxULGRpMPLK-qUXTzE9xG8hteg116vk8VhVvjsjLHjg5vubZ677Z-ExP0_-g8McGKCiSI3uBI_H27LV8rcLWSI575ElLIjKIBKoTaSFNCIk4OTczbUprUJL6wjYDxyG7GYoRob1hQJIKcWeEBOHxR6aQ',
+    desc: 'Combo ưu đãi trọn gói vé cáp treo đỉnh Vân Sơn và tiệc buffet Vân Sơn đỉnh núi.',
+  },
+  {
+    id: 's5',
+    name: 'Vé VinWonders & Vinpearl Safari Phú Quốc',
+    category: 'Vé vui chơi',
+    badgeType: 'ticket',
+    location: 'Phú Quốc, Kiên Giang',
+    price: '950.000đ',
+    image:
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuD-1vQn-N-xHfg9t-p_Xl0bH03jH1wX-p-FjC4Bwz2f0R1s7Bw_q_Y7t7Lh_eD9t2Xb9M8VJg',
+    desc: 'Khám phá công viên chủ đề lớn nhất Việt Nam và công viên chăm sóc bảo tồn động vật bán hoang dã.',
+  },
+  {
+    id: 's6',
+    name: 'Tour 3 Đảo Nha Trang VIP ngắm san hô bằng cano',
+    category: 'Tour trong ngày',
+    badgeType: 'ticket',
+    location: 'Nha Trang, Khánh Hòa',
+    price: '450.000đ',
+    image:
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuAzHjzUMOeqqzHj81H3SNLia_ugFZzw_hIAN5XIeHFR--kc3f2yC4BpqXBAypam-IFxp50YwO8yftKIjOWjuEYOSTUyJ0uH9ZG3Dep7LLe9xATRVy2-UdLWUvN6LEwPo4iebvP7mEHkx1IlM1uD1WAcBnLNO2Uk7Md88uyrBvCqw-jh-a-x6UikSLrCEOn6w4TIyi1p77QI_5IFDi78wNrb33UMykd_xmGlnFFYxa3m6Vx_vnY5xTbUnQ',
+    desc: 'Khám phá Hòn Mun, Làng Chài và Bãi Tranh kèm bữa trưa hải sản tươi sống.',
+  },
+  {
+    id: 's7',
+    name: 'Vé cáp treo Bà Nà Hills Đà Nẵng & Cầu Vàng',
+    category: 'Vé du lịch',
+    badgeType: 'ticket',
+    location: 'Hòa Vang, Đà Nẵng',
+    price: '850.000đ',
+    image:
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuCD9Oq_RPEGEGzH7qtJdclfBsbGzfPmDloHZ4U7RrOu2qRr7Ki4yM9OP4Uldg66L2Q_XG4YImiinDBZKuSuEvSiwCx48c93YSajNx1y9W9CcJjjJQsUr4bZMyOZPMxfYmfkDMCSldWm0RN8xPGbBsT2XnmI5rVnDoN-_r_qkK1LsOj2AVFGW69ROkz1h9Yd4TRk7ahLYht3mz_tcE2Hked3YmtkAQfU6IPHL5fG2Ii_bDV_rxeZbrAy0w',
+    desc: 'Trải nghiệm cáp treo đạt nhiều kỷ lục thế giới, check-in Cầu Vàng và Làng Pháp cổ kính.',
+  },
+  {
+    id: 's8',
+    name: 'Vé tham quan Làng nổi Tân Lập',
+    category: 'Vé du lịch',
+    badgeType: 'ticket',
+    location: 'Mộc Hóa, Long An',
+    price: '85.000đ',
+    image:
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuDjkighYpG_LrLjQ61PUillxA-9CqiV88O0Pw1486FdGZOdWKslZZ4J3SZHqYo545GvqRkS1fbJyA8ixJg8WLHkv2Rv6W1rq2vmUFHzQs2sKtftB7eOZPwMLPJ150mVw0hvLP0T25Lb1Wut8AeOGFKzV9SdMxopcgPdwMdGX-ZmkRSzh3j3WJQw-oIsH8JyhokpYwdJXIOh1DPUAc4_Tq31QO4xJaBhx1MNK_xQfVnVUy2EGp6QdpyDxA',
+    desc: 'Vé vào cổng khám phá rừng tràm nguyên sinh Tân Lập, tản bộ trên cung đường đan xuyên rừng rợp mát.',
+  },
+  {
+    id: 's9',
+    name: 'Vé tham quan Khu du lịch Tràm Chim Đồng Tháp',
+    category: 'Vé du lịch',
+    badgeType: 'ticket',
+    location: 'Tam Nông, Đồng Tháp',
+    price: '120.000đ',
+    image:
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuCjE11xrEgPVl0sKSOWc72cucCJGrxpa4xwNPhTHJxtTsI5UJiycjD9-0ufyUV_H1sAAjSgqm9wCYujS5_YmjvGzAWXRDjydbjREdvN4RB1uZbu6vTXzZRwZJsvHVbz5XLd3yF95qAzQTYeMonIFNNsV3blGb7TbK25eUaRGKQVFKasZoGqOXZbp0L1cdoX_1y-q2iER6a5LVT2backDHdB5IIMo6QfqbzQIkBPK30fPGKXLxA-FYCsyA',
+    desc: 'Chiêm ngưỡng hệ sinh thái đất ngập nước quý hiếm với sếu đầu đỏ và thảm thực vật đặc trưng Đồng Tháp Mười.',
+  },
+  {
+    id: 's10',
+    name: 'Khách sạn Meliá Vinpearl Tây Ninh',
+    category: 'Lưu trú',
+    badgeType: 'hotel',
+    location: 'Lê Duẩn, TP. Tây Ninh',
+    price: '1.350.000đ',
+    image:
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuAluqKY48UCquc5770tGQjKIOIG0FOubIxG-k2IjRal4E1lX-lhZPdaqd8d6yl7y94HE3dua0WycKusXWWMZhYa1SEMhgD4TaxdIkFBF5s2OuTzKGd8PJFXgqOzbF5MrzbRBbOaY5FZsxzvrEbRAmZZlSnSBR218k_Fmnw8Z5pybkbGVhbHyoBY3s6yf0ybfFfHRxnVTEhkIxEc9GhudSXirueNgPmY3gjRDD3lSPVdszGTRbN2G4z-lQ',
+    desc: 'Khách sạn 5 sao cao cấp nhất Tây Ninh với tầm nhìn bao trọn Núi Bà Đen.',
+  },
+  {
+    id: 's11',
+    name: 'Khách sạn Sunrise Tây Ninh',
+    category: 'Lưu trú',
+    badgeType: 'hotel',
+    location: 'Đường 30/4, TP. Tây Ninh',
+    price: '820.000đ',
+    image:
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuDcb8x7bGBANPtEmwliCGFXD9IEm7ucJC-rEFPjRDGna348yDqfIVr3zbq3Z89AOwSV9OEjAt-fBuw0TDSO9VM5BvExDQzfqWNLIukEsxTDDbvzHi2_lBWmKu_ENUDCGOtP1kyihFKXRQvhrrqvc6EPF2SY1b6LlI-sosXkQJh9y_KVgEtvVXe1U8dAwogbKk3Z4ceHRiuLzCv1WbPNi5TspUYQ_UwvHxh4iqPJfhgoEK7gMyIhEVOIOg',
+    desc: 'Khách sạn tiện nghi, gần trung tâm hành chính và các điểm ẩm thực địa phương.',
+  },
+  {
+    id: 's12',
+    name: 'Điểm đến Tây Ninh - Nóc nhà Nam Bộ',
+    category: 'Điểm đến',
+    badgeType: 'destination',
+    location: 'Tây Ninh',
+    price: 'Từ 245.000đ',
+    image: 'https://eholiday.vn/wp-content/uploads/2024/09/dinh-van-son-nui-ba-den-tay-ninh.jpg',
+    desc: 'Chinh phục Núi Bà Đen, viếng Tòa Thánh Tây Ninh và thưởng thức đặc sản bánh tráng phơi sương.',
+  },
+  {
+    id: 's13',
+    name: 'Điểm đến Phú Quốc - Thiên đường Đảo Ngọc',
+    category: 'Điểm đến',
+    badgeType: 'destination',
+    location: 'Phú Quốc, Kiên Giang',
+    price: 'Từ 450.000đ',
+    image:
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuACHeSsmNtGW73oPHbTnkoOjwojVbnAi_q-4FwEjticQ1CpkieRivPIb-gAw4tS1l4Cv-JqNVSzTVL3uwVaaWcYlmXMvRzGvVM0XyFvN_l4afVQjmxtBGxPoDvA5sMcOE_42ml1pUm1YGpBXgwhLMOfENsw0MYIdVfgs4tXeJ9Bdozh-oDqHUV9FvFg7LEkCke4NYFI2hTP1XwpvJGTDgNyPSk5scMWHb0yNaXZB_Jwy92D4fLU3rNEPQ',
+    desc: 'Thiên đường biển đảo với Bãi Sao, Grand World, VinWonders và cáp treo Hòn Thơm vượt biển.',
+  },
+  {
+    id: 's14',
+    name: 'Điểm đến Đà Nẵng - Thành phố đáng sống',
+    category: 'Điểm đến',
+    badgeType: 'destination',
+    location: 'Đà Nẵng',
+    price: 'Từ 350.000đ',
+    image:
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuCD9Oq_RPEGEGzH7qtJdclfBsbGzfPmDloHZ4U7RrOu2qRr7Ki4yM9OP4Uldg66L2Q_XG4YImiinDBZKuSuEvSiwCx48c93YSajNx1y9W9CcJjjJQsUr4bZMyOZPMxfYmfkDMCSldWm0RN8xPGbBsT2XnmI5rVnDoN-_r_qkK1LsOj2AVFGW69ROkz1h9Yd4TRk7ahLYht3mz_tcE2Hked3YmtkAQfU6IPHL5fG2Ii_bDV_rxeZbrAy0w',
+    desc: 'Cầu Rồng, Bà Nà Hills, Bán đảo Sơn Trà và bãi biển Mỹ Khê xinh đẹp.',
+  },
+  {
+    id: 's15',
+    name: 'Điểm đến Nha Trang - Vịnh biển thiên đường',
+    category: 'Điểm đến',
+    badgeType: 'destination',
+    location: 'Nha Trang, Khánh Hòa',
+    price: 'Từ 260.000đ',
+    image:
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuAzHjzUMOeqqzHj81H3SNLia_ugFZzw_hIAN5XIeHFR--kc3f2yC4BpqXBAypam-IFxp50YwO8yftKIjOWjuEYOSTUyJ0uH9ZG3Dep7LLe9xATRVy2-UdLWUvN6LEwPo4iebvP7mEHkx1IlM1uD1WAcBnLNO2Uk7Md88uyrBvCqw-jh-a-x6UikSLrCEOn6w4TIyi1p77QI_5IFDi78wNrb33UMykd_xmGlnFFYxa3m6Vx_vnY5xTbUnQ',
+    desc: 'Khám phá các vịnh đảo ngọc, tắm bùn khoáng nóng, lặn ngắm rạn san hô kỳ thú.',
+  },
+];
+
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const inputRef = useRef<TextInput>(null);
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [showTopBanner, setShowTopBanner] = useState(true);
   const [savedCoupons, setSavedCoupons] = useState<Record<string, boolean>>({});
 
   // Countdown timer for Flash Sale
@@ -48,24 +232,43 @@ export default function HomeScreen() {
     setSavedCoupons(prev => ({ ...prev, [code]: !prev[code] }));
   };
 
-  const filteredServices = useMemo(() => {
-    if (!searchQuery.trim()) return TOP_SERVICES;
-    const q = searchQuery.toLowerCase().trim();
-    return TOP_SERVICES.filter(
-      item => item.name.toLowerCase().includes(q) || item.location.toLowerCase().includes(q)
-    );
+  const filteredSearchResults = useMemo(() => {
+    const q = searchQuery.trim();
+    if (!q) return [];
+    const normalizedQ = removeVietnameseTones(q);
+    return ALL_SEARCH_ITEMS.filter((item) => {
+      const matchName = removeVietnameseTones(item.name).includes(normalizedQ);
+      const matchLoc = removeVietnameseTones(item.location).includes(normalizedQ);
+      const matchCat = removeVietnameseTones(item.category).includes(normalizedQ);
+      const matchDesc = item.desc ? removeVietnameseTones(item.desc).includes(normalizedQ) : false;
+      return matchName || matchLoc || matchCat || matchDesc;
+    });
   }, [searchQuery]);
 
-  const filteredDestinations = useMemo(() => {
-    if (!searchQuery.trim()) return TRENDING_DESTINATIONS;
-    const q = searchQuery.toLowerCase().trim();
-    return TRENDING_DESTINATIONS.filter(
-      item => item.name.toLowerCase().includes(q) || item.desc.toLowerCase().includes(q)
-    );
-  }, [searchQuery]);
+  const handleSelectSearchResult = (item: (typeof ALL_SEARCH_ITEMS)[0]) => {
+    Keyboard.dismiss();
+    if (item.badgeType === 'destination') {
+      router.push({
+        pathname: '/ve-du-lich',
+        params: { location: item.location },
+      } as any);
+    } else if (item.badgeType === 'hotel') {
+      router.push('/luu-tru');
+    } else {
+      router.push({
+        pathname: '/chi-tiet-ve',
+        params: {
+          name: item.name,
+          price: item.price,
+          location: item.location,
+          image: item.image,
+          desc: item.desc,
+        },
+      });
+    }
+  };
 
-  const handleSelectService = (item: (typeof TOP_SERVICES)[0]) => {
-    setShowDropdown(false);
+  const handleSelectService = (item: any) => {
     Keyboard.dismiss();
     router.push({
       pathname: '/chi-tiet-ve',
@@ -79,24 +282,10 @@ export default function HomeScreen() {
     });
   };
 
-  const handleSelectDestination = (dest: { name: string }) => {
-    setShowDropdown(false);
-    Keyboard.dismiss();
-    router.push({
-      pathname: '/ve-du-lich',
-      params: {
-        location: dest.name,
-      },
-    });
-  };
-
   const handleSearchSubmit = () => {
-    setShowDropdown(false);
     Keyboard.dismiss();
-    if (searchQuery.trim()) {
-      router.push({ pathname: '/ve-du-lich', params: { search: searchQuery.trim() } } as any);
-    } else {
-      router.push('/ve-du-lich');
+    if (!searchQuery.trim()) {
+      inputRef.current?.focus();
     }
   };
 
@@ -108,61 +297,12 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
-        scrollEnabled={!showDropdown}
         onScrollBeginDrag={() => Keyboard.dismiss()}
       >
-        {/* Dismiss Backdrop when dropdown is open */}
-        {showDropdown && (
-          <Pressable
-            style={styles.outsideBackdrop}
-            onPress={() => {
-              setShowDropdown(false);
-              Keyboard.dismiss();
-            }}
-          />
-        )}
-
-        {/* ========================================================================= */}
-        {/* BEGIN: TopAppBanner (Smart Acquisition Banner) */}
-        {/* ========================================================================= */}
-        {showTopBanner && (
-          <View style={[styles.topAppBanner, { paddingTop: Math.max(insets.top, 8) }]}>
-            <View style={styles.bannerLeft}>
-              <View style={styles.bannerIconBadge}>
-                <Text style={styles.bannerIconText}>i</Text>
-              </View>
-              <View>
-                <View style={styles.bannerTitleRow}>
-                  <Text style={styles.bannerTitleText}>igovi trên điện thoại</Text>
-                  <View style={styles.bannerOfferTag}>
-                    <Text style={styles.bannerOfferTagText}>Ưu đãi</Text>
-                  </View>
-                </View>
-                <Text style={styles.bannerSubtitleText}>Vé điện tử QR quét vào cổng tức thì</Text>
-              </View>
-            </View>
-            <View style={styles.bannerRight}>
-              <Pressable
-                style={styles.bannerOpenBtn}
-                onPress={() => router.push('/ve-du-lich')}
-              >
-                <Text style={styles.bannerOpenBtnText}>Mở App</Text>
-              </Pressable>
-              <Pressable
-                onPress={() => setShowTopBanner(false)}
-                hitSlop={10}
-                style={styles.bannerCloseBtn}
-              >
-                <Text style={styles.bannerCloseText}>✕</Text>
-              </Pressable>
-            </View>
-          </View>
-        )}
-
         {/* ========================================================================= */}
         {/* BEGIN: MainHeader (Deep Emerald Header with Search & Quick Profile) */}
         {/* ========================================================================= */}
-        <View style={styles.mainHeader}>
+        <View style={[styles.mainHeader, { paddingTop: Math.max(insets.top, 14) }]}>
           {/* Top Brand & Actions Row */}
           <View style={styles.headerTopRow}>
             <View style={styles.brandTitleRow}>
@@ -196,14 +336,8 @@ export default function HomeScreen() {
           <Text style={styles.sloganText}>Đi để yêu Việt Nam hơn</Text>
 
           {/* Search Bar with Circular Action Button */}
-          <View style={[styles.searchPillWrapper, showDropdown && { zIndex: 30 }]}>
-            <Pressable
-              style={styles.searchPillBar}
-              onPress={() => {
-                setShowDropdown(true);
-                inputRef.current?.focus();
-              }}
-            >
+          <View style={styles.searchPillWrapper}>
+            <View style={styles.searchPillBar}>
               <View style={styles.searchGlassIcon}>
                 <SymbolView name="magnifyingglass" size={17} tintColor="#94A3B8" />
               </View>
@@ -211,15 +345,12 @@ export default function HomeScreen() {
               <TextInput
                 ref={inputRef}
                 style={styles.searchInputField}
-                placeholder="Tìm điểm đến, vé tour, cáp treo..."
+                placeholder="Tìm vé cáp treo, tour, khách sạn..."
                 placeholderTextColor="#94A3B8"
                 value={searchQuery}
-                onChangeText={(text) => {
-                  setSearchQuery(text);
-                  if (!showDropdown) setShowDropdown(true);
-                }}
-                onFocus={() => setShowDropdown(true)}
+                onChangeText={(text) => setSearchQuery(text)}
                 onSubmitEditing={handleSearchSubmit}
+                returnKeyType="search"
               />
 
               {searchQuery.length > 0 && (
@@ -227,9 +358,10 @@ export default function HomeScreen() {
                   style={styles.searchClearBtn}
                   onPress={() => {
                     setSearchQuery('');
-                    inputRef.current?.focus();
+                    Keyboard.dismiss();
                   }}
                   hitSlop={8}
+                  accessibilityLabel="Xóa tìm kiếm"
                 >
                   <Text style={styles.searchClearText}>✕</Text>
                 </Pressable>
@@ -238,144 +370,180 @@ export default function HomeScreen() {
               <Pressable
                 style={styles.searchSubmitCircle}
                 onPress={() => {
-                  if (searchQuery.trim()) {
-                    handleSearchSubmit();
-                  } else {
-                    setShowDropdown(!showDropdown);
-                    if (!showDropdown) inputRef.current?.focus();
+                  Keyboard.dismiss();
+                  if (!searchQuery.trim()) {
+                    inputRef.current?.focus();
                   }
                 }}
+                hitSlop={6}
+                accessibilityLabel="Tìm kiếm"
               >
-                <SymbolView name="arrow.right" size={14} tintColor="#FFFFFF" />
+                <SymbolView name={searchQuery.trim() ? "arrow.right" : "magnifyingglass"} size={14} tintColor="#FFFFFF" />
               </Pressable>
-            </Pressable>
+            </View>
 
-            {/* Dropdown Card */}
-            {showDropdown && (
-              <View style={styles.dropdownCard}>
-                <View style={styles.dropdownTopBar}>
-                  <View style={styles.dropdownIndicator} />
+            {/* Quick Trending Keywords Chips */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.trendingChipsScroll}
+            >
+              <Text style={styles.trendingChipsLabel}>Gợi ý:</Text>
+              {TRENDING_SEARCH_TAGS.map((tag) => {
+                const isActive = searchQuery.toLowerCase().trim() === tag.toLowerCase();
+                return (
                   <Pressable
+                    key={tag}
+                    style={[styles.trendingChip, isActive && styles.trendingChipActive]}
                     onPress={() => {
-                      setShowDropdown(false);
+                      setSearchQuery(tag);
                       Keyboard.dismiss();
                     }}
-                    hitSlop={10}
-                    style={styles.collapseBtn}
                   >
-                    <Text style={styles.collapseBtnText}>Thu gọn ▲</Text>
+                    <Text style={[styles.trendingChipText, isActive && styles.trendingChipTextActive]}>
+                      {tag}
+                    </Text>
                   </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+
+        {searchQuery.trim().length > 0 ? (
+          <View style={styles.searchResultsContainer}>
+            {/* Header info */}
+            <View style={styles.searchResultsHeaderRow}>
+              <View style={styles.searchResultsHeaderLeft}>
+                <SymbolView name="magnifyingglass.circle.fill" size={20} tintColor="#047857" />
+                <View style={{ marginLeft: 8 }}>
+                  <Text style={styles.searchResultsTitle}>
+                    Kết quả cho <Text style={styles.searchKeywordHighlight}>&ldquo;{searchQuery.trim()}&rdquo;</Text>
+                  </Text>
+                  <Text style={styles.searchResultsCountText}>
+                    Tìm thấy {filteredSearchResults.length} dịch vụ & điểm đến
+                  </Text>
                 </View>
+              </View>
 
-                <ScrollView
-                  style={styles.dropdownInnerScroll}
-                  contentContainerStyle={styles.dropdownInnerContent}
-                  nestedScrollEnabled={true}
-                  showsVerticalScrollIndicator={true}
-                  keyboardShouldPersistTaps="handled"
+              <Pressable
+                style={styles.clearSearchBtn}
+                onPress={() => {
+                  setSearchQuery('');
+                  Keyboard.dismiss();
+                }}
+              >
+                <Text style={styles.clearSearchBtnText}>Xóa lọc ✕</Text>
+              </Pressable>
+            </View>
+
+            {/* Result items */}
+            {filteredSearchResults.length > 0 ? (
+              <View style={styles.searchResultsList}>
+                {filteredSearchResults.map((item) => (
+                  <Pressable
+                    key={item.id}
+                    style={({ pressed }) => [
+                      styles.searchResultCard,
+                      pressed && { opacity: 0.92, transform: [{ scale: 0.99 }] },
+                    ]}
+                    onPress={() => handleSelectSearchResult(item)}
+                  >
+                    <View style={styles.searchResultThumbWrap}>
+                      <Image source={{ uri: item.image }} style={styles.searchResultThumb} contentFit="cover" />
+                      <View
+                        style={[
+                          styles.searchResultBadge,
+                          item.badgeType === 'hotel'
+                            ? styles.badgeHotel
+                            : item.badgeType === 'destination'
+                            ? styles.badgeDest
+                            : styles.badgeTicket,
+                        ]}
+                      >
+                        <Text style={styles.searchResultBadgeText}>{item.category}</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.searchResultBody}>
+                      <Text style={styles.searchResultName} numberOfLines={2}>
+                        {item.name}
+                      </Text>
+
+                      <View style={styles.searchResultLocRow}>
+                        <SymbolView name="mappin" size={12} tintColor="#047857" />
+                        <Text style={styles.searchResultLocText} numberOfLines={1}>
+                          {item.location}
+                        </Text>
+                      </View>
+
+                      <Text style={styles.searchResultDesc} numberOfLines={2}>
+                        {item.desc}
+                      </Text>
+
+                      <View style={styles.searchResultFooterRow}>
+                        <View>
+                          <Text style={styles.searchResultPriceLabel}>Giá tham khảo</Text>
+                          <Text style={styles.searchResultPriceVal}>{item.price}</Text>
+                        </View>
+
+                        <View style={styles.searchResultActionBtn}>
+                          <Text style={styles.searchResultActionBtnText}>
+                            {item.badgeType === 'destination' ? 'Khám phá' : item.badgeType === 'hotel' ? 'Xem phòng' : 'Đặt vé'}
+                          </Text>
+                          <SymbolView name="arrow.right" size={11} tintColor="#FFFFFF" />
+                        </View>
+                      </View>
+                    </View>
+                  </Pressable>
+                ))}
+
+                {/* Banner link to ve-du-lich */}
+                <Pressable
+                  style={styles.moreTicketsBanner}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/ve-du-lich',
+                      params: { search: searchQuery.trim() },
+                    } as any)
+                  }
                 >
-                  {/* Top Dịch Vụ Nổi Bật */}
-                  <View style={styles.dropdownSection}>
-                    <View style={styles.dropdownSectionHeader}>
-                      <View style={styles.sectionHeaderLeft}>
-                        <Text style={styles.fireEmoji}>🔥</Text>
-                        <Text style={styles.dropdownSectionTitle}>Top dịch vụ nổi bật</Text>
-                      </View>
-                      <Pressable
-                        onPress={() => {
-                          setShowDropdown(false);
-                          Keyboard.dismiss();
-                          router.push('/ve-du-lich');
-                        }}
-                        hitSlop={8}
-                      >
-                        <Text style={styles.seeAllOrange}>Xem tất cả →</Text>
-                      </Pressable>
-                    </View>
-
-                    {filteredServices.length > 0 ? (
-                      filteredServices.map((item) => (
-                        <Pressable
-                          key={item.id}
-                          style={({ pressed }) => [
-                            styles.serviceItemRow,
-                            pressed && { backgroundColor: '#F8FAFC' },
-                          ]}
-                          onPress={() => handleSelectService(item)}
-                        >
-                          <View style={styles.thumbContainer}>
-                            <Image source={{ uri: item.image }} style={styles.serviceThumb} contentFit="cover" />
-                            <View style={styles.rankBadgeOrange}>
-                              <Text style={styles.rankBadgeText}>{item.rank}</Text>
-                            </View>
-                          </View>
-                          <View style={styles.serviceInfoCol}>
-                            <Text style={styles.serviceName} numberOfLines={1}>{item.name}</Text>
-                            <Text style={styles.serviceSub} numberOfLines={1}>{item.category} · {item.location}</Text>
-                          </View>
-                          <View style={styles.servicePriceCol}>
-                            <Text style={styles.servicePrice}>Từ {item.price}</Text>
-                          </View>
-                        </Pressable>
-                      ))
-                    ) : (
-                      <Text style={styles.emptyResultText}>Không tìm thấy dịch vụ phù hợp</Text>
-                    )}
+                  <View style={{ flex: 1, marginRight: 10 }}>
+                    <Text style={styles.moreTicketsTitle}>Xem thêm vé liên quan trên Chuyên mục Vé</Text>
+                    <Text style={styles.moreTicketsSub}>
+                      Tìm kiếm toàn bộ bảng giá và ưu đãi tại trang Vé du lịch
+                    </Text>
                   </View>
-
-                  <View style={styles.dropdownDivider} />
-
-                  {/* Điểm Đến Theo Xu Hướng */}
-                  <View style={styles.dropdownSection}>
-                    <View style={styles.dropdownSectionHeader}>
-                      <View style={styles.sectionHeaderLeft}>
-                        <SymbolView name="mappin.circle.fill" size={17} tintColor="#0B4736" style={{ marginRight: 6 }} />
-                        <Text style={styles.dropdownSectionTitle}>Điểm đến theo xu hướng</Text>
-                      </View>
-                      <Pressable
-                        onPress={() => {
-                          setShowDropdown(false);
-                          Keyboard.dismiss();
-                          router.push('/ban-do-so');
-                        }}
-                        hitSlop={8}
-                      >
-                        <Text style={styles.seeAllGreen}>Bản đồ →</Text>
-                      </Pressable>
-                    </View>
-
-                    {filteredDestinations.length > 0 ? (
-                      filteredDestinations.map((dest) => (
-                        <Pressable
-                          key={dest.id}
-                          style={({ pressed }) => [
-                            styles.serviceItemRow,
-                            pressed && { backgroundColor: '#F8FAFC' },
-                          ]}
-                          onPress={() => handleSelectDestination(dest)}
-                        >
-                          <View style={styles.thumbContainer}>
-                            <Image source={{ uri: dest.image }} style={styles.serviceThumb} contentFit="cover" />
-                            <View style={styles.rankBadgeGreen}>
-                              <Text style={styles.rankBadgeText}>{dest.rank}</Text>
-                            </View>
-                          </View>
-                          <View style={styles.serviceInfoCol}>
-                            <Text style={styles.serviceName} numberOfLines={1}>{dest.name}</Text>
-                            <Text style={styles.serviceSub} numberOfLines={1}>{dest.desc}</Text>
-                          </View>
-                          <SymbolView name="chevron.right" size={14} tintColor="#CBD5E1" />
-                        </Pressable>
-                      ))
-                    ) : (
-                      <Text style={styles.emptyResultText}>Không tìm thấy điểm đến phù hợp</Text>
-                    )}
+                  <View style={styles.moreTicketsArrow}>
+                    <SymbolView name="chevron.right" size={14} tintColor="#047857" />
                   </View>
-                </ScrollView>
+                </Pressable>
+              </View>
+            ) : (
+              <View style={styles.emptySearchContainer}>
+                <View style={styles.emptyIconCircle}>
+                  <SymbolView name="magnifyingglass" size={30} tintColor="#94A3B8" />
+                </View>
+                <Text style={styles.emptySearchTitle}>Không tìm thấy kết quả nào</Text>
+                <Text style={styles.emptySearchDesc}>
+                  Không có dịch vụ hoặc điểm đến nào khớp với &ldquo;{searchQuery.trim()}&rdquo;. Bạn hãy thử các từ khóa gợi ý bên dưới:
+                </Text>
+                <View style={styles.emptyTagsWrap}>
+                  {TRENDING_SEARCH_TAGS.map((t) => (
+                    <Pressable
+                      key={t}
+                      style={styles.emptyTagBtn}
+                      onPress={() => setSearchQuery(t)}
+                    >
+                      <Text style={styles.emptyTagBtnText}>{t}</Text>
+                    </Pressable>
+                  ))}
+                </View>
               </View>
             )}
           </View>
-        </View>
+        ) : (
+          <>
 
         {/* ========================================================================= */}
         {/* BEGIN: QuickServicesGrid (5 Squircle Categories -mt-8 from Stitch) */}
@@ -1068,6 +1236,8 @@ export default function HomeScreen() {
             </Pressable>
           </View>
         </View>
+      </>
+    )}
 
         {/* Global Footer */}
         <GlobalFooter />
@@ -1258,39 +1428,7 @@ const TOP_SERVICES = [
   },
 ];
 
-const TRENDING_DESTINATIONS = [
-  {
-    id: 1,
-    rank: 1,
-    name: 'Long An',
-    desc: 'Rừng tràm Tân Lập, sông nước mênh mông',
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDcb8x7bGBANPtEmwliCGFXD9IEm7ucJC-rEFPjRDGna348yDqfIVr3zbq3Z89AOwSV9OEjAt-fBuw0TDSO9VM5BvExDQzfqWNLIukEsxTDDbvzHi2_lBWmKu_ENUDCGOtP1kyihFKXRQvhrrqvc6EPF2SY1b6LlI-sosXkQJh9y_KVgEtvVXe1U8dAwogbKk3Z4ceHRiuLzCv1WbPNi5TspUYQ_UwvHxh4iqPJfhgoEK7gMyIhEVOIOg',
-  },
-  {
-    id: 2,
-    rank: 2,
-    name: 'Đồng Tháp',
-    desc: 'Đồng sen Tháp Mười, làng hoa Sa Đéc',
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuACHeSsmNtGW73oPHbTnkoOjwojVbnAi_q-4FwEjticQ1CpkieRivPIb-gAw4tS1l4Cv-JqNVSzTVL3uwVaaWcYlmXMvRzGvVM0XyFvN_l4afVQjmxtBGxPoDvA5sMcOE_42ml1pUm1YGpBXgwhLMOfENsw0MYIdVfgs4tXeJ9Bdozh-oDqHUV9FvFg7LEkCke4NYFI2hTP1XwpvJGTDgNyPSk5scMWHb0yNaXZB_Jwy92D4fLU3rNEPQ',
-  },
-  {
-    id: 3,
-    rank: 3,
-    name: 'Bến Tre',
-    desc: 'Xứ Dừa, miệt vườn chèo xuồng ven sông',
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuAluqKY48UCquc5770tGQjKIOIG0FOubIxG-k2IjRal4E1lX-lhZPdaqd8d6yl7y94HE3dua0WycKusXWWMZhYa1SEMhgD4TaxdIkFBF5s2OuTzKGd8PJFXgqOzbF5MrzbRBbOaY5FZsxzvrEbRAmZZlSnSBR218k_Fmnw8Z5pybkbGVhbHyoBY3s6yf0ybfFfHRxnVTEhkIxEc9GhudSXirueNgPmY3gjRDD3lSPVdszGTRbN2G4z-lQ',
-  },
-  {
-    id: 4,
-    rank: 4,
-    name: 'Tây Ninh',
-    desc: 'Núi Bà Đen, cáp treo Sun World',
-    image: 'https://eholiday.vn/wp-content/uploads/2024/09/dinh-van-son-nui-ba-den-tay-ninh.jpg',
-  },
-];
+
 
 const styles = StyleSheet.create({
   container: {
@@ -1309,90 +1447,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
 
-  /* ========================================================================= */
-  /* Top App Banner */
-  /* ========================================================================= */
-  topAppBanner: {
-    backgroundColor: '#073B2E',
-    paddingHorizontal: 14,
-    paddingBottom: 8,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(11, 71, 54, 0.5)',
-  },
-  bannerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flex: 1,
-  },
-  bannerIconBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 7,
-    backgroundColor: '#F97316',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  bannerIconText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '900',
-  },
-  bannerTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  bannerTitleText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  bannerOfferTag: {
-    backgroundColor: 'rgba(16, 185, 129, 0.25)',
-    borderWidth: 0.5,
-    borderColor: 'rgba(52, 211, 153, 0.4)',
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderRadius: 8,
-  },
-  bannerOfferTagText: {
-    color: '#A7F3D0',
-    fontSize: 9,
-    fontWeight: '800',
-  },
-  bannerSubtitleText: {
-    color: 'rgba(209, 250, 229, 0.75)',
-    fontSize: 9.5,
-    fontWeight: '500',
-  },
-  bannerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  bannerOpenBtn: {
-    backgroundColor: '#F97316',
-    paddingHorizontal: 10,
-    paddingVertical: 4.5,
-    borderRadius: 14,
-  },
-  bannerOpenBtnText: {
-    color: '#FFFFFF',
-    fontSize: 10.5,
-    fontWeight: '800',
-  },
-  bannerCloseBtn: {
-    padding: 3,
-  },
-  bannerCloseText: {
-    color: 'rgba(209, 250, 229, 0.7)',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
+
 
   /* ========================================================================= */
   /* Main Header */
@@ -1541,166 +1596,276 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  /* Search Dropdown */
-  outsideBackdrop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(15, 23, 42, 0.45)',
-    zIndex: 15,
+  /* Search Results UI */
+  searchResultsContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 24,
   },
-  dropdownCard: {
-    marginTop: 8,
+  searchResultsHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    padding: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 14,
+    shadowColor: '#000000',
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  searchResultsHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 8,
+  },
+  searchResultsTitle: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  searchKeywordHighlight: {
+    color: '#047857',
+    fontWeight: '900',
+  },
+  searchResultsCountText: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 1,
+  },
+  clearSearchBtn: {
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  clearSearchBtnText: {
+    fontSize: 11,
+    color: '#EF4444',
+    fontWeight: '700',
+  },
+  searchResultsList: {
+    gap: 12,
+  },
+  searchResultCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    overflow: 'hidden',
+    shadowColor: '#000000',
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  searchResultThumbWrap: {
+    height: 140,
+    width: '100%',
+    position: 'relative',
+    backgroundColor: '#E2E8F0',
+  },
+  searchResultThumb: {
+    width: '100%',
+    height: '100%',
+  },
+  searchResultBadge: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  badgeTicket: {
+    backgroundColor: '#F97316',
+  },
+  badgeHotel: {
+    backgroundColor: '#0D9488',
+  },
+  badgeDest: {
+    backgroundColor: '#047857',
+  },
+  searchResultBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 9.5,
+    fontWeight: '800',
+  },
+  searchResultBody: {
+    padding: 12,
+  },
+  searchResultName: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: 4,
+  },
+  searchResultLocRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  searchResultLocText: {
+    fontSize: 11,
+    color: '#047857',
+    fontWeight: '600',
+    marginLeft: 4,
+  },
+  searchResultDesc: {
+    fontSize: 11.5,
+    color: '#64748B',
+    lineHeight: 16,
+    marginBottom: 10,
+  },
+  searchResultFooterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+    paddingTop: 8,
+  },
+  searchResultPriceLabel: {
+    fontSize: 9.5,
+    color: '#94A3B8',
+    fontWeight: '600',
+  },
+  searchResultPriceVal: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#F97316',
+  },
+  searchResultActionBtn: {
+    backgroundColor: '#073B2E',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    gap: 4,
+  },
+  searchResultActionBtnText: {
+    color: '#FFFFFF',
+    fontSize: 11.5,
+    fontWeight: '800',
+  },
+  moreTicketsBanner: {
+    backgroundColor: '#ECFDF5',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 6,
+  },
+  moreTicketsTitle: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#064E3B',
+    marginBottom: 2,
+  },
+  moreTicketsSub: {
+    fontSize: 10.5,
+    color: '#047857',
+  },
+  moreTicketsArrow: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  emptySearchContainer: {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    overflow: 'hidden',
-    shadowColor: '#073B2E',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.16,
-    shadowRadius: 18,
-    elevation: 6,
-    maxHeight: 380,
-  },
-  dropdownTopBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-  },
-  dropdownIndicator: {
-    width: 32,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: '#E2E8F0',
-  },
-  collapseBtn: {
-    padding: 2,
-  },
-  collapseBtnText: {
-    color: '#059669',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  dropdownInnerScroll: {
-    maxHeight: 340,
-  },
-  dropdownInnerContent: {
-    paddingHorizontal: 12,
-    paddingBottom: 14,
-  },
-  dropdownSection: {
-    marginTop: 8,
-  },
-  dropdownSectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  sectionHeaderLeft: {
-    flexDirection: 'row',
+    padding: 24,
     alignItems: 'center',
   },
-  fireEmoji: {
-    fontSize: 13,
-    marginRight: 4,
-  },
-  dropdownSectionTitle: {
-    fontSize: 11.5,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  seeAllOrange: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#F97316',
-  },
-  seeAllGreen: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#059669',
-  },
-  serviceItemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 7,
-    paddingHorizontal: 6,
-    borderRadius: 12,
-  },
-  thumbContainer: {
-    position: 'relative',
-    marginRight: 9,
-  },
-  serviceThumb: {
-    width: 44,
-    height: 44,
-    borderRadius: 9,
-  },
-  rankBadgeOrange: {
-    position: 'absolute',
-    top: -3,
-    left: -3,
-    backgroundColor: '#F97316',
-    width: 15,
-    height: 15,
-    borderRadius: 7.5,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  rankBadgeGreen: {
-    position: 'absolute',
-    top: -3,
-    left: -3,
-    backgroundColor: '#059669',
-    width: 15,
-    height: 15,
-    borderRadius: 7.5,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  rankBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 9,
-    fontWeight: '900',
-  },
-  serviceInfoCol: {
-    flex: 1,
-  },
-  serviceName: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    color: '#0F172A',
-  },
-  serviceSub: {
-    fontSize: 9.5,
-    color: '#64748B',
-    marginTop: 1,
-  },
-  servicePriceCol: {
-    marginLeft: 6,
-  },
-  servicePrice: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#F97316',
-  },
-  emptyResultText: {
-    fontSize: 11,
-    color: '#94A3B8',
-    textAlign: 'center',
-    paddingVertical: 10,
-  },
-  dropdownDivider: {
-    height: 1,
+  emptyIconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: '#F1F5F9',
-    marginVertical: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  emptySearchTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  emptySearchDesc: {
+    fontSize: 11.5,
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 17,
+    marginBottom: 16,
+  },
+  emptyTagsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  emptyTagBtn: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
+  },
+  emptyTagBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#047857',
+  },
+  trendingChipsScroll: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: 8,
+    paddingBottom: 2,
+    gap: 6,
+  },
+  trendingChipsLabel: {
+    color: '#A7F3D0',
+    fontSize: 11,
+    fontWeight: '800',
+    marginRight: 2,
+  },
+  trendingChip: {
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  trendingChipActive: {
+    backgroundColor: '#F97316',
+    borderColor: '#F97316',
+  },
+  trendingChipText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  trendingChipTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '800',
   },
 
   /* ========================================================================= */
